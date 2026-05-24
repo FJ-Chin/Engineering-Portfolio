@@ -235,24 +235,28 @@ const heroModes = {
     items: [
       {
         title: "Verbasense",
+        projectId: "Verbasense",
         meta: "AI classroom feedback",
         image: "assets/projects/verbasense/poster.jpg",
         copy: "Detects confusion cues and translates them into a simple teaching signal."
       },
       {
         title: "Snoreless",
+        projectId: "Snoreless",
         meta: "Sleep-health concept",
         image: "assets/projects/snoreless/prototype.jpg",
         copy: "A health-tech product concept documented through ARTSIC materials."
       },
       {
         title: "Solar Powered WBGT",
+        projectId: "Solar Powered WBGT Monitor",
         meta: "Outdoor sensing",
         image: "assets/projects/wbgt/device-front.jpg",
         copy: "A solar-assisted field prototype for heat-stress awareness."
       },
       {
         title: "LiftOff",
+        projectId: "LiftOff 3D Project",
         meta: "3D fabrication",
         image: "assets/projects/liftoff/group-photo-cropped.jpg",
         copy: "A making-focused project with poster, presentation, and demo evidence."
@@ -264,12 +268,14 @@ const heroModes = {
     items: [
       {
         title: "CellWave Technologies",
+        projectId: "CellWave Technologies",
         meta: "Medtech internship",
         image: "assets/projects/cellwave/company-photo.jpg",
         copy: "Cell culture context, PDMS mould iteration, and cartridge alignment evidence."
       },
       {
         title: "KOKONI 3D",
+        projectId: "Kokoni",
         meta: "TIIDE internship",
         image: "assets/projects/kokoni/kokoni-presentation.jpg",
         copy: "Mini paint mixer development and AI-powered image-to-object workflow exploration."
@@ -686,7 +692,16 @@ if (storyPanels.length) {
 visualStage.addEventListener("click", (event) => {
   const card = event.target.closest("[data-hero-card]");
   if (!card) return;
-  rotateHeroTo(Number(card.dataset.heroCard));
+  const clickedIndex = Number(card.dataset.heroCard);
+  const mode = heroModes[activeHeroMode];
+
+  if (clickedIndex === activeHeroIndex && mode.items?.[clickedIndex]?.projectId) {
+    const projectIndex = projects.findIndex((project) => project.title === mode.items[clickedIndex].projectId);
+    if (projectIndex >= 0) openProject(projectIndex);
+    return;
+  }
+
+  rotateHeroTo(clickedIndex);
   restartHeroTimer();
 });
 

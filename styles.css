@@ -549,6 +549,10 @@ h3 {
   color: var(--muted);
 }
 
+.contact-section .section-label {
+  color: var(--blue);
+}
+
 .filter-bar {
   flex-wrap: wrap;
   gap: 10px;
@@ -1222,8 +1226,20 @@ figcaption {
   }
 
   .hero-visual {
-    top: 104px;
+    position: relative;
+    top: auto;
+    order: -1;
     min-height: 600px;
+  }
+
+  .story-copy {
+    display: grid;
+    gap: 24px;
+  }
+
+  .story-panel {
+    min-height: auto;
+    padding: 56px 0;
   }
 
   .hero-profile-card img {
@@ -1307,7 +1323,7 @@ figcaption {
   }
 
   .hero-visual {
-    min-height: 680px;
+    min-height: 640px;
   }
 
   .hero-profile-card {
