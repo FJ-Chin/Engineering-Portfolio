@@ -190,12 +190,93 @@ const skillCloud = document.querySelector("#skill-cloud");
 const projectGrid = document.querySelector("#project-grid");
 const filters = document.querySelectorAll(".filter");
 const topbar = document.querySelector(".topbar");
-const menuButton = document.querySelector(".menu-button");
-const mobileNav = document.querySelector(".mobile-nav");
 const modal = document.querySelector("#project-modal");
 const closeButton = document.querySelector(".close-button");
 const lightbox = document.querySelector("#media-lightbox");
 const lightboxContent = document.querySelector("#lightbox-content");
+const visualStage = document.querySelector("#visual-stage");
+const storyPanels = document.querySelectorAll(".story-panel[data-hero-mode]");
+let activeHeroMode = "about";
+let activeHeroIndex = 0;
+let heroTimer;
+let heroIsRotating = false;
+let modeIsTransitioning = false;
+
+const heroModes = {
+  about: {
+    interval: 4200,
+    render() {
+      return `
+        <section class="hero-mode about">
+          <figure class="hero-profile-card">
+            <img src="assets/profile/profile-hero.jpg" alt="Chin Fu Jie smiling outdoors with a nature background">
+            <figcaption>
+              <span>About Me</span>
+            </figcaption>
+          </figure>
+          <div class="floating-note note-a">
+            <span>Builder</span>
+            <strong>I enjoy turning early ideas into testable physical and digital prototypes.</strong>
+          </div>
+          <div class="floating-note note-b">
+            <span>Direction</span>
+            <strong>Medtech, rapid prototyping, AI workflows, and product systems.</strong>
+          </div>
+          <div class="floating-note note-c">
+            <span>Mindset</span>
+            <strong>Make it real, test it early, explain it clearly.</strong>
+          </div>
+        </section>
+      `;
+    }
+  },
+  projects: {
+    interval: 3200,
+    items: [
+      {
+        title: "Verbasense",
+        meta: "AI classroom feedback",
+        image: "assets/projects/verbasense/poster.jpg",
+        copy: "Detects confusion cues and translates them into a simple teaching signal."
+      },
+      {
+        title: "Snoreless",
+        meta: "Sleep-health concept",
+        image: "assets/projects/snoreless/prototype.jpg",
+        copy: "A health-tech product concept documented through ARTSIC materials."
+      },
+      {
+        title: "Solar Powered WBGT",
+        meta: "Outdoor sensing",
+        image: "assets/projects/wbgt/device-front.jpg",
+        copy: "A solar-assisted field prototype for heat-stress awareness."
+      },
+      {
+        title: "LiftOff",
+        meta: "3D fabrication",
+        image: "assets/projects/liftoff/group-photo-cropped.jpg",
+        copy: "A making-focused project with poster, presentation, and demo evidence."
+      }
+    ]
+  },
+  internships: {
+    interval: 3400,
+    items: [
+      {
+        title: "CellWave Technologies",
+        meta: "Medtech internship",
+        image: "assets/projects/cellwave/company-photo.jpg",
+        copy: "Cell culture context, PDMS mould iteration, and cartridge alignment evidence."
+      },
+      {
+        title: "KOKONI 3D",
+        meta: "TIIDE internship",
+        image: "assets/projects/kokoni/kokoni-presentation.jpg",
+        copy: "Mini paint mixer development and AI-powered image-to-object workflow exploration."
+      }
+    ]
+  }
+};
 
 function renderSkills() {
   skillCloud.innerHTML = skills.map((skill) => `<span>${skill}</span>`).join("");
@@ -477,22 +558,138 @@ lightbox.addEventListener("close", () => {
   lightboxContent.innerHTML = "";
 });
 
-menuButton.addEventListener("click", () => {
-  const isOpen = menuButton.getAttribute("aria-expanded") === "true";
-  menuButton.setAttribute("aria-expanded", String(!isOpen));
-  mobileNav.hidden = isOpen;
-});
-
-mobileNav.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
-    mobileNav.hidden = true;
-    menuButton.setAttribute("aria-expanded", "false");
-  }
-});
-
 window.addEventListener("scroll", () => {
   topbar.dataset.elevated = String(window.scrollY > 12);
 }, { passive: true });
 
+function renderHeroVisual() {
+  const mode = heroModes[activeHeroMode];
+  if (!mode.items) {
+    visualStage.innerHTML = mode.render();
+    return;
+  }
+
+  visualStage.innerHTML = `
+    <section class="hero-mode">
+      <div class="rotary-stage ${activeHeroMode}">
+        ${mode.items.map((item, index) => `
+          <article class="rotary-card ${getRotaryPosition(index, activeHeroIndex, mode.items.length)}" data-hero-card="${index}">
+            <img src="${item.image}" alt="${item.title}">
+            <div>
+              <span>${item.meta}</span>
+              <strong>${item.title}</strong>
+              <p>${item.copy}</p>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function updateRotaryPositions() {
+  const mode = heroModes[activeHeroMode];
+  if (!mode.items) return;
+  document.querySelectorAll(".rotary-card").forEach((card) => {
+    const index = Number(card.dataset.heroCard);
+    card.className = `rotary-card ${getRotaryPosition(index, activeHeroIndex, mode.items.length)}`;
+  });
+}
+
+function rotateHeroTo(nextIndex) {
+  const mode = heroModes[activeHeroMode];
+  if (!mode.items || heroIsRotating || nextIndex === activeHeroIndex) return;
+
+  heroIsRotating = true;
+  activeHeroIndex = nextIndex;
+  updateRotaryPositions();
+
+  window.setTimeout(() => {
+    heroIsRotating = false;
+  }, 940);
+}
+
+function getRotaryPosition(index, activeIndex, total) {
+  if (index === activeIndex) return "is-active";
+  const nextIndex = (activeIndex + 1) % total;
+  const prevIndex = (activeIndex - 1 + total) % total;
+  if (index === nextIndex) return "is-next";
+  if (index === prevIndex) return "is-prev";
+  return "is-back";
+}
+
+function setHeroMode(modeName) {
+  if (modeName === activeHeroMode || modeIsTransitioning) return;
+  modeIsTransitioning = true;
+  visualStage.classList.add("mode-exit");
+
+  window.setTimeout(() => {
+    activeHeroMode = modeName;
+    activeHeroIndex = 0;
+    renderHeroVisual();
+    restartHeroTimer();
+    visualStage.classList.remove("mode-exit");
+    visualStage.classList.add("mode-enter");
+
+    window.setTimeout(() => {
+      visualStage.classList.remove("mode-enter");
+      modeIsTransitioning = false;
+    }, 520);
+  }, 260);
+}
+
+function setHeroModeImmediate(modeName) {
+  activeHeroMode = modeName;
+  activeHeroIndex = 0;
+  renderHeroVisual();
+  restartHeroTimer();
+}
+
+function restartHeroTimer() {
+  clearInterval(heroTimer);
+  const mode = heroModes[activeHeroMode];
+  if (!mode.items) return;
+  heroTimer = setInterval(() => {
+    rotateHeroTo((activeHeroIndex + 1) % mode.items.length);
+  }, mode.interval);
+}
+
+function syncHeroModeToScroll() {
+  if (!storyPanels.length || modeIsTransitioning) return;
+
+  const viewportFocus = window.innerHeight * 0.42;
+  let closestPanel = storyPanels[0];
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  storyPanels.forEach((panel) => {
+    const rect = panel.getBoundingClientRect();
+    const panelCenter = rect.top + rect.height * 0.42;
+    const distance = Math.abs(panelCenter - viewportFocus);
+
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestPanel = panel;
+    }
+  });
+
+  if (closestPanel.dataset.heroMode !== activeHeroMode) {
+    setHeroMode(closestPanel.dataset.heroMode);
+  }
+}
+
+if (storyPanels.length) {
+  window.addEventListener("scroll", syncHeroModeToScroll, { passive: true });
+  window.addEventListener("resize", syncHeroModeToScroll);
+  syncHeroModeToScroll();
+}
+
+visualStage.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-hero-card]");
+  if (!card) return;
+  rotateHeroTo(Number(card.dataset.heroCard));
+  restartHeroTimer();
+});
+
+setHeroModeImmediate("about");
 renderSkills();
 renderProjects();

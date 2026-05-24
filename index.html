@@ -21,128 +21,55 @@
       <span>Chin Fu Jie</span>
     </a>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#about">About</a>
-      <a href="#experience">Experience</a>
+      <a href="#about">About Me</a>
       <a href="#projects">Projects</a>
+      <a href="#internships">Internships</a>
+      <a href="#compiled">Compiled Experiences</a>
       <a href="#contact">Contact</a>
     </nav>
-    <button class="icon-button menu-button" type="button" aria-label="Open menu" aria-expanded="false">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
   </header>
 
-  <nav class="mobile-nav" aria-label="Mobile navigation" hidden>
-    <a href="#about">About</a>
-    <a href="#experience">Experience</a>
-    <a href="#projects">Projects</a>
-    <a href="#contact">Contact</a>
-  </nav>
-
   <main id="home">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="kicker">Engineering Student / Product Builder</p>
-        <h1>Chin Fu Jie</h1>
-        <p class="hero-line">I build practical prototypes at the intersection of product design, medical technology, hardware, and AI-enabled creative workflows.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#projects">View Projects</a>
-          <a class="button secondary" href="#contact">Get In Touch</a>
-        </div>
-        <dl class="metrics" aria-label="Portfolio highlights">
-          <div>
-            <dt>6</dt>
-            <dd>Documented projects</dd>
+    <section class="story-section">
+      <div class="story-copy">
+        <article id="about" class="story-panel" data-hero-mode="about">
+          <p class="kicker">01 / About Me</p>
+          <h1>Chin Fu Jie</h1>
+          <p class="title-line">Engineering Student / Product Builder</p>
+          <p class="hero-line">I build practical prototypes at the intersection of product design, medical technology, hardware, and AI-enabled creative workflows.</p>
+          <p>I am an engineering student who enjoys moving from ambiguous problems to tangible prototypes. My work spans health-tech concepts, solar-powered sensing, microfluidics support work, classroom AI tools, and 3D product development.</p>
+          <p>Through the TIIDE Scholarship under Zhejiang University, I was exposed to China's innovation ecosystem through industry visits and founder conversations at companies including Alibaba Group, XbotPark, DEEP Robotics, ROBAM, and Daily Interactive.</p>
+          <p>At KOKONI 3D, I worked on product initiatives around a mini paint mixer for fast, accurate paint dispensing and an AI-powered image-to-object workflow.</p>
+          <div class="skill-cloud" id="skill-cloud"></div>
+        </article>
+
+        <article id="projects" class="story-panel" data-hero-mode="projects">
+          <p class="section-label">02 / Projects</p>
+          <h2>Student projects built with working evidence, not just descriptions.</h2>
+          <p>My projects are where I test ideas through real prototypes: an AI classroom feedback tool, a sleep-health concept, a solar-assisted WBGT monitor, and a 3D fabrication project.</p>
+          <p>The visual on the right rotates through these projects as full posts, with one project moving into focus while the others recede into the background.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#compiled">View Compiled Evidence</a>
           </div>
-          <div>
-            <dt>TIIDE</dt>
-            <dd>Zhejiang exposure</dd>
-          </div>
-          <div>
-            <dt>KOKONI</dt>
-            <dd>3D internship</dd>
-          </div>
-        </dl>
+        </article>
+
+        <article id="internships" class="story-panel" data-hero-mode="internships">
+          <p class="section-label">03 / Internships</p>
+          <h2>Internship work shaped by medtech, product development, and startup exposure.</h2>
+          <p>CellWave Technologies gave me exposure to medtech development, including cell culture context, PDMS mould work, and cartridge alignment comparison.</p>
+          <p>KOKONI 3D connected my interests in rapid prototyping and AI-assisted workflows through mini paint mixer development and image-to-object exploration.</p>
+          <p>These experiences strengthened my interest in building useful products that can move from concept to testable form quickly.</p>
+        </article>
       </div>
 
-      <div class="device-stage" aria-label="Portfolio preview visual">
-        <div class="phone-shell">
-          <div class="phone-status">
-            <span></span>
-            <span></span>
-          </div>
-          <div class="app-header">
-            <img src="assets/profile.svg" alt="">
-            <div>
-              <strong>Chin Fu Jie</strong>
-              <small>Product prototyping & medtech</small>
-            </div>
-          </div>
-          <div class="signal-card">
-            <span class="pulse"></span>
-            <div>
-              <strong>From concept to working demo</strong>
-              <small>CAD, electronics, AI workflows, testing</small>
-            </div>
-          </div>
-          <img class="phone-image" src="assets/projects/wbgt/device-front.jpg" alt="Solar powered WBGT monitor prototype">
-          <div class="mini-grid">
-            <span>MedTech</span>
-            <span>AI</span>
-            <span>Product</span>
-            <span>Hardware</span>
-          </div>
-        </div>
+      <div class="hero-visual" aria-label="Interactive overview of Chin Fu Jie, projects, and internships">
+        <div class="visual-stage" id="visual-stage"></div>
       </div>
     </section>
 
-    <section id="about" class="section two-column">
-      <div>
-        <p class="section-label">01 / About</p>
-        <h2>Building prototypes that make technical ideas easier to test, explain, and improve.</h2>
-      </div>
-      <div class="body-copy">
-        <p>I am an engineering student who enjoys moving from ambiguous problems to tangible prototypes. My work spans health-tech concepts, solar-powered sensing, microfluidics support work, classroom AI tools, and 3D product development.</p>
-        <p>Through the TIIDE Scholarship under Zhejiang University, I was exposed to China's innovation ecosystem through industry visits and founder conversations at companies including Alibaba Group, XbotPark, DEEP Robotics, ROBAM, and Daily Interactive. That experience sharpened my interest in how startups validate ideas, survive uncertainty, and scale products.</p>
-        <p>At KOKONI 3D, I worked on product initiatives around a mini paint mixer for fast, accurate paint dispensing and an AI-powered image-to-object workflow. I am especially interested in rapid prototyping, AI-assisted design workflows, medical technology, and practical product systems that can be tested in the real world.</p>
-        <div class="skill-cloud" id="skill-cloud"></div>
-      </div>
-    </section>
-
-    <section id="experience" class="section">
+    <section id="compiled" class="section projects-section">
       <div class="section-heading">
-        <p class="section-label">02 / Experience</p>
-        <h2>Experience and project direction.</h2>
-      </div>
-      <div class="timeline">
-        <article>
-          <span>2026</span>
-          <div>
-            <h3>KOKONI 3D / TIIDE Programme</h3>
-            <p>Completed an internship at KOKONI 3D as part of the TIIDE Programme, contributing to a mini paint mixer concept for fast and accurate paint dispensing and exploring AI-powered image-to-object workflows.</p>
-          </div>
-        </article>
-        <article>
-          <span>2025</span>
-          <div>
-            <h3>Health-Tech, Sensing & Product Prototypes</h3>
-            <p>Built and documented prototypes across sleep-health, WBGT heat-stress monitoring, classroom AI feedback, 3D design, and microfluidics-related development work.</p>
-          </div>
-        </article>
-        <article>
-          <span>Now</span>
-          <div>
-            <h3>Current Direction</h3>
-            <p>Looking for opportunities where I can apply product design, rapid prototyping, hardware development, and AI-assisted workflows to build useful tools with clear user or industry value.</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section id="projects" class="section projects-section">
-      <div class="section-heading">
-        <p class="section-label">03 / Projects</p>
+        <p class="section-label">04 / Compiled Experiences</p>
         <h2>Projects with working evidence.</h2>
       </div>
       <div class="filter-bar" role="toolbar" aria-label="Project filters">
@@ -157,7 +84,7 @@
 
     <section id="contact" class="section contact-section">
       <div>
-        <p class="section-label">04 / Contact</p>
+        <p class="section-label">05 / Contact</p>
         <h2>Let's connect on product, prototyping, and engineering opportunities.</h2>
         <p>I am open to internships, collaborations, and roles involving product development, rapid prototyping, medical technology, hardware systems, or AI-assisted design workflows.</p>
       </div>
