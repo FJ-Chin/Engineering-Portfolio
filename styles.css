@@ -20,6 +20,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 12px;
 }
 
 body {
@@ -83,6 +84,7 @@ button {
 }
 
 .nav {
+  position: relative;
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 6px;
@@ -99,16 +101,48 @@ button {
 }
 
 .nav a {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   min-height: 34px;
   padding: 0 12px;
   border-radius: 999px;
+  transition: color 220ms ease;
 }
 
 .nav a:hover {
   background: rgba(16, 24, 32, 0.06);
   color: var(--ink);
+}
+
+.nav a.is-active {
+  color: white;
+}
+
+.nav a.is-active:hover {
+  background: transparent;
+  color: white;
+}
+
+.nav-indicator {
+  position: absolute;
+  display: block;
+  left: var(--nav-indicator-left, 6px);
+  top: var(--nav-indicator-top, 6px);
+  width: var(--nav-indicator-width, 0px);
+  height: var(--nav-indicator-height, 34px);
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: 0 10px 24px rgba(16, 24, 32, 0.2);
+  opacity: var(--nav-indicator-opacity, 0);
+  transform: translateZ(0);
+  transition:
+    left 260ms cubic-bezier(.22,.72,.18,1),
+    top 260ms cubic-bezier(.22,.72,.18,1),
+    width 260ms cubic-bezier(.22,.72,.18,1),
+    height 260ms cubic-bezier(.22,.72,.18,1),
+    opacity 180ms ease;
 }
 
 .icon-button {
@@ -127,7 +161,11 @@ button {
 .footer {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 88px 24px;
+  padding: 64px 24px;
+}
+
+.section {
+  scroll-margin-top: 42px;
 }
 
 .story-section {
@@ -137,7 +175,11 @@ button {
   align-items: start;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 18px 24px 96px;
+  padding: 10px 24px 28px;
+}
+
+.projects-section {
+  padding-top: 44px;
 }
 
 .story-copy {
@@ -155,11 +197,15 @@ button {
 .story-panel {
   display: grid;
   align-content: center;
-  min-height: calc(100vh - 76px);
-  padding: 72px 0;
-  scroll-margin-top: 20px;
+  min-height: calc(86vh - 76px);
+  padding: 48px 0;
+  scroll-margin-top: 42px;
   color: var(--muted);
   font-size: 18px;
+}
+
+.story-panel + .story-panel {
+  margin-top: 44px;
 }
 
 .story-panel h1,
@@ -285,6 +331,8 @@ h3 {
   isolation: isolate;
   display: grid;
   align-self: start;
+  overflow: hidden;
+  border-radius: 24px;
 }
 
 .hero-visual::before {
@@ -303,6 +351,7 @@ h3 {
 .visual-stage {
   position: relative;
   min-height: 490px;
+  margin-inline: 10px;
   transition: transform 520ms cubic-bezier(.2,.8,.2,1), opacity 520ms ease, filter 520ms ease;
 }
 
@@ -420,7 +469,7 @@ h3 {
   display: grid;
   grid-template-rows: 1fr auto;
   overflow: hidden;
-  width: min(420px, 70%);
+  width: min(430px, 70%);
   min-height: 460px;
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 22px;
@@ -442,16 +491,16 @@ h3 {
 
 .rotary-card.is-next {
   z-index: 3;
-  opacity: 0.74;
-  filter: saturate(0.85);
-  transform: translate(2%, -48%) scale(0.72) rotateY(-16deg);
+  opacity: 0.54;
+  filter: saturate(0.72) blur(0.25px);
+  transform: translate(-8%, -47%) scale(0.56) rotateY(-22deg) translateZ(-120px);
 }
 
 .rotary-card.is-prev {
   z-index: 2;
-  opacity: 0.54;
-  filter: saturate(0.75);
-  transform: translate(-104%, -48%) scale(0.68) rotateY(16deg);
+  opacity: 0.4;
+  filter: saturate(0.68) blur(0.35px);
+  transform: translate(-92%, -47%) scale(0.52) rotateY(22deg) translateZ(-140px);
 }
 
 .rotary-card.is-back {
@@ -499,8 +548,8 @@ h3 {
 .skill-cloud {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .skill-cloud span,
@@ -516,7 +565,7 @@ h3 {
 
 .skill-cloud span,
 .project-tag {
-  padding: 8px 12px;
+  padding: 7px 11px;
 }
 
 .section-heading {
@@ -1222,7 +1271,7 @@ figcaption {
 
   .story-section {
     gap: 28px;
-    padding-top: 28px;
+    padding-top: 18px;
   }
 
   .hero-visual {
@@ -1239,7 +1288,11 @@ figcaption {
 
   .story-panel {
     min-height: auto;
-    padding: 56px 0;
+    padding: 42px 0;
+  }
+
+  .story-panel + .story-panel {
+    margin-top: 0;
   }
 
   .hero-profile-card img {
@@ -1266,7 +1319,7 @@ figcaption {
   }
 
   .rotary-card {
-    width: min(390px, 76%);
+    width: min(400px, 74%);
   }
 
   .project-grid {
@@ -1349,23 +1402,23 @@ figcaption {
   }
 
   .rotary-stage {
-    min-height: 580px;
+    min-height: 570px;
   }
 
   .rotary-card {
-    width: min(360px, 82%);
-    min-height: 420px;
+    width: min(370px, 84%);
+    min-height: 450px;
   }
 
   .rotary-card.is-next {
-    transform: translate(-4%, -48%) scale(0.62) rotateY(-12deg);
+    transform: translate(-18%, -48%) scale(0.5) rotateY(-18deg) translateZ(-120px);
   }
 
   .rotary-card.is-prev {
-    transform: translate(-96%, -48%) scale(0.58) rotateY(12deg);
+    transform: translate(-82%, -48%) scale(0.48) rotateY(18deg) translateZ(-140px);
   }
 
   .rotary-card img {
-    height: 260px;
+    height: 290px;
   }
 }

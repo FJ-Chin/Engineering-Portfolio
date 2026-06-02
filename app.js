@@ -1,29 +1,25 @@
 const skills = [
-  "Rapid Prototyping",
-  "Product Development",
-  "Medical Technology",
-  "AI-Assisted Workflows",
-  "Additive Manufacturing",
+  "Human-Centered Design",
+  "Product Prototyping",
+  "Computer Vision",
   "Embedded Systems",
-  "Fusion 360",
-  "Sensor Systems",
-  "Python",
-  "Microfluidics",
-  "Hardware Testing",
-  "Technical Communication"
+  "CAD & 3D Printing",
+  "MedTech",
+  "Workflow Automation",
+  "Assistive Technology"
 ];
 
 const projects = [
   {
     title: "Verbasense",
-    category: "Software",
+    category: "AI-Powered",
     cover: "assets/projects/verbasense/poster.jpg",
-    summary: "An AI-assisted classroom feedback concept that listens for confusion-related language and gives teachers a simple visual cue on class understanding.",
+    summary: "A classroom feedback system designed around students who hide confusion out of embarrassment, turning unheard pain points into a low-friction signal teachers can act on.",
     tags: ["AI", "ESP32", "Dart", "Classroom UX"],
     features: [
-      "Explores how AI can help teachers detect confusion without relying only on hand-raising.",
-      "Turns classroom sentiment into a simple color-based indicator that is easy to interpret during a lesson.",
-      "Combines ESP32 hardware, software prototyping, and presentation materials into a student design project."
+      "Designed for students who may avoid asking questions because they fear looking \"dumb\" in front of peers.",
+      "Uses AI-assisted language cues to surface confusion without forcing students to publicly raise the issue.",
+      "Turns hidden uncertainty into a calmer, more normalized feedback loop for teachers and students."
     ],
     gallery: [
       { src: "assets/projects/verbasense/poster.jpg", caption: "Poster overview of the concept, problem space, and proposed solution." },
@@ -39,14 +35,14 @@ const projects = [
   },
   {
     title: "Snoreless",
-    category: "Product",
+    category: "Assistive Tech",
     cover: "assets/projects/snoreless/team-photo.png",
-    summary: "A sleep-health product concept developed for TECH ARTSIC 2021, focused on reducing snoring-related disruption through a practical user-facing prototype.",
+    summary: "A sleep apnoea and snoring concept that replaces bulky negative-pressure tongue suction with a positive-pressure silicone mouthguard that supports the tongue during sleep.",
     tags: ["Health Tech", "Product", "Competition"],
     features: [
-      "Frames snoring as a sleep-quality and wellness problem that affects both the user and people around them.",
-      "Documents the concept through prototype imagery, a project poster, final slides, and award evidence.",
-      "Recognized with Merit and Best Poster Award documentation."
+      "Challenges bulky tongue-suction designs with a more discreet positive-air-pressure mouthguard concept.",
+      "Uses a motor to inflate hidden air bags inside a comfortable silicone mouthguard.",
+      "Holds the tongue in place during sleep to support users affected by snoring or sleep apnoea."
     ],
     gallery: [
       { src: "assets/projects/snoreless/team-photo.png", caption: "Team photo documenting the competition/project group." }
@@ -71,14 +67,14 @@ const projects = [
   },
   {
     title: "Solar Powered WBGT Monitor",
-    category: "Hardware",
+    category: "Smart Sensing",
     cover: "assets/projects/wbgt/group-photo.jpg",
-    summary: "A portable solar-assisted WBGT monitor built to support outdoor heat-stress awareness, with documented enclosure views and internal electronics.",
+    summary: "A WBGT heat-stress monitor designed for outdoor deployment, using solar power because the device naturally operates in constant sunlight.",
     tags: ["Solar", "Sensors", "Field Test"],
     features: [
-      "Designed as a field-ready monitoring prototype for outdoor heat-stress conditions.",
-      "Combines solar-assisted power, sensor integration, casing design, and practical mounting considerations.",
-      "Documented with team photo, product views, internal wiring, and final report material."
+      "Adds solar charging to extend runtime and reduce battery swaps for a device placed outdoors.",
+      "Makes the power source match the operating environment: heat-stress monitoring under sun exposure.",
+      "Packages sensing, solar-assisted power, enclosure design, and field usability into one prototype."
     ],
     gallery: [
       { src: "assets/projects/wbgt/group-photo.jpg", caption: "Project team photo." }
@@ -98,14 +94,14 @@ const projects = [
   },
   {
     title: "Kokoni",
-    category: "Product",
+    category: "AI-Powered",
     cover: "assets/projects/kokoni/kokoni-presentation.jpg",
-    summary: "A KOKONI 3D internship project connected to mini paint mixer development and AI-powered image-to-object workflow exploration.",
+    summary: "A KOKONI 3D internship project developing a two-part hobbyist workflow: Mixin, an automatic CMYK paint mixer, and an AI sketch-to-3D-file generator.",
     tags: ["Design", "Prototype", "Build"],
     features: [
-      "Built around fast and accurate paint dispensing through a mini paint mixer concept.",
-      "Explores how AI-enabled creative workflows can support image-to-object generation and rapid prototyping.",
-      "Connected to TIIDE exposure to China’s startup and innovation ecosystem."
+      "Mixin lets users mix any hexcode paint color at the quantity they need using CMYK bases.",
+      "The AI image-to-3D workflow helps turn sketches into editable object files for Blender.",
+      "Built around hobbyist pain points: buying too many specific paints and struggling to turn original designs into physical models."
     ],
     gallery: [
       { src: "assets/projects/kokoni/kokoni-presentation.jpg", caption: "Primary Kokoni presentation visual." },
@@ -123,14 +119,14 @@ const projects = [
   },
   {
     title: "CellWave Technologies",
-    category: "Research",
+    category: "Medical Devices",
     cover: "assets/projects/cellwave/company-photo.jpg",
-    summary: "A medtech internship project involving cell culture context, cell sorting support, PDMS mould iteration, and cartridge alignment comparison.",
+    summary: "A medtech internship where I built an automatic cartridge alignment system for cell sorting and proposed a PDMS mould workflow adopted into standard procedure.",
     tags: ["MedTech", "Microfluidics", "PDMS"],
     features: [
-      "Documents lab-facing development work through cell culture, cell sorter, and PDMS process photos.",
-      "Compares cartridge alignment runs through a program-style visual layout and side-by-side video evidence.",
-      "Includes final SIP report material for deeper technical review."
+      "Self-learned computer vision and alignment algorithms to locate the cartridge region needed by the cell-sorting microchip.",
+      "Automated micrometer-sensitive cartridge alignment for each new cartridge insert.",
+      "Proposed and iterated PLA/resin PDMS moulds to replace manual cutting and punching, reducing wasted parts and saving testing time."
     ],
     gallery: [
       { src: "assets/projects/cellwave/company-photo.jpg", caption: "Company/project context photo." },
@@ -158,14 +154,14 @@ const projects = [
   },
   {
     title: "LiftOff 3D Project",
-    category: "Hardware",
+    category: "Assistive Tech",
     cover: "assets/projects/liftoff/group-photo-cropped.jpg",
-    summary: "A 3D design and fabrication project showing team presentation, poster communication, and a working prototype video.",
+    summary: "A self-raising seat concept for elderly users and people with sarcopenia, helping them stand with less external assistance and more dignity.",
     tags: ["3D Printing", "CAD", "Fabrication"],
     features: [
-      "Shows hands-on fabrication and product communication through group and presentation photos.",
-      "Pairs the project poster with a working demo video so the outcome is visible, not only described.",
-      "Highlights practical making, presentation, and documentation skills."
+      "Designed for muscle loss and elderly mobility contexts where standing up can be difficult.",
+      "Raises the user at an angle with a button press, reducing dependence on another person's help.",
+      "Can be implemented on priority seats, buses, trains, PMDs, or chairs in places elderly users frequent."
     ],
     gallery: [
       { src: "assets/projects/liftoff/group-photo-cropped.jpg", caption: "Main group photo." },
@@ -190,17 +186,24 @@ const skillCloud = document.querySelector("#skill-cloud");
 const projectGrid = document.querySelector("#project-grid");
 const filters = document.querySelectorAll(".filter");
 const topbar = document.querySelector(".topbar");
+const nav = document.querySelector(".nav");
+const navLinks = document.querySelectorAll(".nav a[href^='#']");
 const modal = document.querySelector("#project-modal");
 const closeButton = document.querySelector(".close-button");
 const lightbox = document.querySelector("#media-lightbox");
 const lightboxContent = document.querySelector("#lightbox-content");
 const visualStage = document.querySelector("#visual-stage");
 const storyPanels = document.querySelectorAll(".story-panel[data-hero-mode]");
+const navSections = [...navLinks]
+  .map((link) => document.querySelector(link.getAttribute("href")))
+  .filter(Boolean);
 let activeHeroMode = "about";
 let activeHeroIndex = 0;
 let heroTimer;
 let heroIsRotating = false;
 let modeIsTransitioning = false;
+let navIndicator;
+let navClickLockUntil = 0;
 
 const heroModes = {
   about: {
@@ -216,15 +219,15 @@ const heroModes = {
           </figure>
           <div class="floating-note note-a">
             <span>Builder</span>
-            <strong>I enjoy turning early ideas into testable physical and digital prototypes.</strong>
+            <strong>I turn overlooked pain points into prototypes people can actually try.</strong>
           </div>
           <div class="floating-note note-b">
             <span>Direction</span>
-            <strong>Medtech, rapid prototyping, AI workflows, and product systems.</strong>
+            <strong>Assistive products, medtech, AI workflows, and better everyday systems.</strong>
           </div>
           <div class="floating-note note-c">
             <span>Mindset</span>
-            <strong>Make it real, test it early, explain it clearly.</strong>
+            <strong>Build for impact, reduce friction, and make the solution feel natural.</strong>
           </div>
         </section>
       `;
@@ -238,28 +241,28 @@ const heroModes = {
         projectId: "Verbasense",
         meta: "AI classroom feedback",
         image: "assets/projects/verbasense/poster.jpg",
-        copy: "Detects confusion cues and translates them into a simple teaching signal."
+        copy: "Surfaces hidden student confusion without making anyone feel singled out."
       },
       {
         title: "Snoreless",
         projectId: "Snoreless",
         meta: "Sleep-health concept",
         image: "assets/projects/snoreless/prototype.jpg",
-        copy: "A health-tech product concept documented through ARTSIC materials."
+        copy: "A positive-pressure mouthguard concept for snoring and sleep apnoea support."
       },
       {
         title: "Solar Powered WBGT",
         projectId: "Solar Powered WBGT Monitor",
         meta: "Outdoor sensing",
         image: "assets/projects/wbgt/device-front.jpg",
-        copy: "A solar-assisted field prototype for heat-stress awareness."
+        copy: "A heat-stress monitor whose solar power matches its outdoor use case."
       },
       {
         title: "LiftOff",
         projectId: "LiftOff 3D Project",
         meta: "3D fabrication",
         image: "assets/projects/liftoff/group-photo-cropped.jpg",
-        copy: "A making-focused project with poster, presentation, and demo evidence."
+        copy: "A self-raising seat for elderly users to stand more independently."
       }
     ]
   },
@@ -271,14 +274,14 @@ const heroModes = {
         projectId: "CellWave Technologies",
         meta: "Medtech internship",
         image: "assets/projects/cellwave/company-photo.jpg",
-        copy: "Cell culture context, PDMS mould iteration, and cartridge alignment evidence."
+        copy: "Computer-vision cartridge alignment and a PDMS mould workflow adopted into procedure."
       },
       {
         title: "KOKONI 3D",
         projectId: "Kokoni",
         meta: "TIIDE internship",
         image: "assets/projects/kokoni/kokoni-presentation.jpg",
-        copy: "Mini paint mixer development and AI-powered image-to-object workflow exploration."
+        copy: "Mixin paint mixing plus AI sketch-to-3D workflows for hobbyists."
       }
     ]
   }
@@ -683,10 +686,74 @@ function syncHeroModeToScroll() {
   }
 }
 
+function updateNavIndicator(activeLink) {
+  if (!nav || !activeLink) return;
+
+  if (!navIndicator) {
+    navIndicator = document.createElement("span");
+    navIndicator.className = "nav-indicator";
+    navIndicator.setAttribute("aria-hidden", "true");
+    nav.prepend(navIndicator);
+  }
+
+  navLinks.forEach((link) => {
+    const isActive = link === activeLink;
+    link.classList.toggle("is-active", isActive);
+    link.toggleAttribute("aria-current", isActive);
+  });
+
+  const navRect = nav.getBoundingClientRect();
+  const linkRect = activeLink.getBoundingClientRect();
+
+  nav.style.setProperty("--nav-indicator-left", `${linkRect.left - navRect.left}px`);
+  nav.style.setProperty("--nav-indicator-top", `${linkRect.top - navRect.top}px`);
+  nav.style.setProperty("--nav-indicator-width", `${linkRect.width}px`);
+  nav.style.setProperty("--nav-indicator-height", `${linkRect.height}px`);
+  nav.style.setProperty("--nav-indicator-opacity", "1");
+}
+
+function syncActiveNavToScroll() {
+  if (!navSections.length) return;
+
+  if (Date.now() < navClickLockUntil) return;
+
+  const pageBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8;
+  if (pageBottom) {
+    updateNavIndicator([...navLinks].find((link) => link.getAttribute("href") === `#${navSections.at(-1).id}`));
+    return;
+  }
+
+  const focusLine = window.scrollY + 150;
+  let activeSection = navSections[0];
+
+  navSections.forEach((section) => {
+    if (section.offsetTop <= focusLine) {
+      activeSection = section;
+    }
+  });
+
+  const activeLink = [...navLinks].find((link) => link.getAttribute("href") === `#${activeSection.id}`);
+  updateNavIndicator(activeLink);
+}
+
+navLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    navClickLockUntil = Date.now() + 900;
+    updateNavIndicator(link);
+    window.setTimeout(syncActiveNavToScroll, 920);
+  });
+});
+
 if (storyPanels.length) {
   window.addEventListener("scroll", syncHeroModeToScroll, { passive: true });
   window.addEventListener("resize", syncHeroModeToScroll);
   syncHeroModeToScroll();
+}
+
+if (navSections.length) {
+  window.addEventListener("scroll", syncActiveNavToScroll, { passive: true });
+  window.addEventListener("resize", syncActiveNavToScroll);
+  syncActiveNavToScroll();
 }
 
 visualStage.addEventListener("click", (event) => {
