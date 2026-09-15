@@ -4,133 +4,147 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chin Fu Jie | Engineering Portfolio</title>
-  <meta name="description" content="Chin Fu Jie engineering portfolio focused on impact-driven products, workflow improvements, assistive technology, medtech, and AI-assisted design.">
+  <meta name="description" content="Chin Fu Jie, an Engineering Product Development undergraduate at SUTD. Hardware, software, and human-centered design for useful products and reliable workflows.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Chin Fu Jie | Engineering Portfolio">
-  <meta property="og:description" content="Impact-driven products, workflow improvements, assistive technology, medtech, and AI-assisted design.">
+  <meta property="og:description" content="Hardware, software, and human-centered design. Explore Chin Fu Jie's projects, professional experience, and recognition.">
   <meta property="og:image" content="assets/og-preview.svg">
-  <meta name="theme-color" content="#101820">
+  <meta name="theme-color" content="#f8f9fa">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260603">
-  <script defer src="app.js?v=20260603"></script>
+  <link rel="preload" href="assets/fonts/inter-latin-variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css?v=20260914b">
+  <script defer src="assets/vendor/lucide.min.js"></script>
+  <script defer src="portfolio-data.js?v=20260912b"></script>
+  <script defer src="app.js?v=20260914b"></script>
 </head>
 <body>
-  <header class="topbar" data-elevated="false">
-    <a class="brand" href="#home" aria-label="Go to home">
-      <span class="brand-mark">CFJ</span>
-      <span>Chin Fu Jie</span>
-    </a>
-    <nav class="nav" aria-label="Primary navigation">
-      <a href="#about">About Me</a>
-      <a href="#projects">Projects</a>
-      <a href="#internships">Internships</a>
-      <a href="#compiled">Compiled Experiences</a>
-      <a href="#contact">Contact</a>
-    </nav>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#about" aria-label="Chin Fu Jie, about me"><span class="brand-mark">CFJ<span>.</span></span><span class="brand-name">Chin Fu Jie</span></a>
+      <nav class="nav" aria-label="Primary navigation">
+        <span class="nav-indicator" aria-hidden="true"></span>
+        <a href="#about" class="is-active" aria-current="location">About</a>
+        <a href="#projects">Selected Work</a>
+        <a href="#experience">Experience</a>
+        <a href="#leadership">Leadership</a>
+        <a href="#recognition">Recognition</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
   </header>
-
-  <main id="home">
-    <section class="story-section">
-      <div class="story-copy">
-        <article id="about" class="story-panel" data-hero-mode="about">
-          <p class="kicker">01 / About Me</p>
-          <h1>Chin Fu Jie</h1>
-          <p class="title-line">Engineering Product Development Undergraduate</p>
-          <p class="hero-line">I specialize in Computer Engineering, with a minor in Human-Centered Design.</p>
-          <p>I enjoy building products that solve real pain points, improve workflows, and make useful technology feel natural to the people using it.</p>
-          <div class="skill-cloud" id="skill-cloud"></div>
-        </article>
-
-        <article id="projects" class="story-panel" data-hero-mode="projects">
-          <p class="section-label">02 / Projects</p>
-          <h2>Projects tackling real user problems and practical impact.</h2>
-          <p>Verbasense gives students a safer way to surface confusion in class, Snoreless explores a positive-pressure mouthguard for sleep apnoea support, the Solar Powered WBGT Monitor uses outdoor sunlight to extend heat-stress monitoring, and LiftOff helps elderly users stand with more independence.</p>
-          <div class="hero-actions">
-            <a class="button primary" href="#compiled">View Compiled Evidence</a>
+  <main id="main">
+    <section id="about" class="section about-section" aria-labelledby="about-title">
+      <div class="about-copy">
+        <p class="section-label"><span>01</span> About me</p>
+        <h1 id="about-title">Chin Fu Jie<span class="name-period">.</span></h1>
+        <p class="title-line">Engineering Product Development Undergraduate</p>
+        <p class="about-education">SUTD <span aria-hidden="true">/</span> Computer Engineering <span aria-hidden="true">/</span> Minor in Human-Centered Design</p>
+        <p class="intro">I build hardware and software that make everyday tasks easier, from classroom feedback to more reliable laboratory workflows.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#projects">Explore my work <i data-lucide="arrow-down-right" aria-hidden="true"></i></a>
+          <a class="text-link" href="assets/documents/chin-fu-jie-resume.pdf" target="_blank" rel="noreferrer">View r&eacute;sum&eacute; <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="skill-cloud" id="skill-cloud" aria-label="Engineering skills"></div>
+      </div>
+      <figure class="profile-figure" aria-label="My approach to making">
+        <div class="profile-scene">
+          <div class="profile-card">
+            <div class="profile-image"><img src="assets/profile/profile-hero.jpg" width="800" height="1000" alt="Chin Fu Jie smiling in a garden" fetchpriority="high"></div>
+            <figcaption><span>Chin Fu Jie</span><span>Engineer. Maker. Problem solver.</span></figcaption>
           </div>
-        </article>
+          <button type="button" class="profile-note note-builder" data-profile-action="builder" title="Build something" aria-label="Builder: ideas into working prototypes">
+            <span class="note-symbol" aria-hidden="true"><i data-lucide="nut" class="note-extra note-fastener"></i><i data-lucide="wrench" class="note-main"></i></span><span class="note-copy"><strong>Builder</strong><span>Ideas into working prototypes.</span></span>
+          </button>
+          <button type="button" class="profile-note note-direction" data-profile-action="direction" title="Find a direction" aria-label="Direction: hardware, software and people">
+            <span class="note-symbol" aria-hidden="true"><i data-lucide="compass" class="note-main"></i><i data-lucide="navigation" class="note-extra note-arrow"></i></span><span class="note-copy"><strong>Direction</strong><span>Hardware, software &amp; people.</span></span>
+          </button>
+          <button type="button" class="profile-note note-mindset" data-profile-action="mindset" title="Make a positive impact" aria-label="Mindset: less friction, more independence">
+            <span class="note-symbol" aria-hidden="true"><i data-lucide="heart-handshake" class="note-main"></i><i data-lucide="heart" class="note-extra note-heart"></i></span><span class="note-copy"><strong>Mindset</strong><span>Less friction. More independence.</span></span>
+          </button>
+        </div>
+      </figure>
+    </section>
 
-        <article id="internships" class="story-panel" data-hero-mode="internships">
-          <p class="section-label">03 / Internships</p>
-          <h2>Internship work that improves real workflows.</h2>
-          <p>At CellWave, I built a computer-vision cartridge alignment system for cell sorting and proposed a PDMS mould workflow that reduced inconsistent manual cutting and punching.</p>
-          <p>At KOKONI, I worked on Mixin, an automatic CMYK paint mixer for hobbyists, and an AI image-to-3D workflow that helps users turn sketches into editable Blender files.</p>
-          <p>These experiences shaped how I think about product development: solve the workflow, reduce friction, and make the result easy to repeat.</p>
-        </article>
+    <section id="projects" class="section work-section" aria-labelledby="work-title">
+      <div class="work-showcase">
+        <div class="work-intro">
+          <div>
+          <p class="section-label"><span>02</span> Selected work</p>
+          <h2 id="work-title">Built around real needs.</h2>
+          </div>
+          <div class="work-intro-copy">
+          <p>From overlooked problems to working prototypes.</p>
+          <a class="text-link" href="#compiled">All projects <i data-lucide="arrow-down-right" aria-hidden="true"></i></a>
+          </div>
+        </div>
+        <div class="focus-glide" data-carousel="projects" aria-label="Selected project highlights" aria-roledescription="carousel"></div>
       </div>
-
-      <div class="hero-visual" aria-label="Interactive overview of Chin Fu Jie, projects, and internships">
-        <div class="visual-stage" id="visual-stage"></div>
+      <div id="compiled" class="project-library">
+        <div class="library-header">
+          <div><h3>Project library</h3><span id="project-count" class="muted" aria-live="polite">6 projects</span></div>
+          <div class="filter-bar" role="group" aria-label="Filter projects by skill">
+            <button type="button" class="filter active" data-filter="All" aria-pressed="true">All</button>
+            <button type="button" class="filter" data-filter="AI-Powered" aria-pressed="false">AI-Powered</button>
+            <button type="button" class="filter" data-filter="Computer Vision" aria-pressed="false">Computer Vision</button>
+            <button type="button" class="filter" data-filter="Embedded Systems" aria-pressed="false">Embedded Systems</button>
+            <button type="button" class="filter" data-filter="Assistive Tech" aria-pressed="false">Assistive Tech</button>
+            <button type="button" class="filter" data-filter="Medical Devices" aria-pressed="false">Medical Devices</button>
+          </div>
+        </div>
+        <div class="project-grid" id="project-grid"></div>
       </div>
     </section>
 
-    <section id="compiled" class="section projects-section">
-      <div class="section-heading">
-        <p class="section-label">04 / Compiled Experiences</p>
-        <h2>Projects with working evidence.</h2>
+    <section id="experience" class="section experience-section" aria-labelledby="experience-title">
+      <div class="section-heading compact-heading"><p class="section-label"><span>03</span> Experience</p><h2 id="experience-title">Internship work that improves real workflows.</h2></div>
+      <div class="experience-stage">
+      <div class="experience-layout">
+        <div class="experience-list" id="experience-list"></div>
+        <div class="carousel experience-carousel" data-carousel="experience" aria-label="Industry project highlights" aria-roledescription="carousel"></div>
       </div>
-      <div class="filter-bar" role="toolbar" aria-label="Project filters">
-        <button class="filter active" type="button" data-filter="All">All</button>
-        <button class="filter" type="button" data-filter="AI-Powered">AI-Powered</button>
-        <button class="filter" type="button" data-filter="Assistive Tech">Assistive Tech</button>
-        <button class="filter" type="button" data-filter="Smart Sensing">Smart Sensing</button>
-        <button class="filter" type="button" data-filter="Medical Devices">Medical Devices</button>
+      <div class="internship-reveal" hidden>
+        <section class="internship-details" aria-labelledby="internship-title">
+          <div class="internship-toolbar">
+            <button type="button" class="text-link internship-back" data-close-internship><i data-lucide="arrow-left" aria-hidden="true"></i> All internships</button>
+            <button type="button" class="icon-button" data-close-internship aria-label="Collapse internship" title="Collapse internship"><i data-lucide="x" aria-hidden="true"></i></button>
+          </div>
+          <div id="internship-content"></div>
+          <button type="button" class="text-link internship-return" data-close-internship><i data-lucide="arrow-up" aria-hidden="true"></i> Back to internships</button>
+        </section>
       </div>
-      <div class="project-grid" id="project-grid"></div>
+      </div>
     </section>
 
-    <section id="contact" class="section contact-section">
-      <div>
-        <p class="section-label">05 / Contact</p>
-        <h2>Let's connect on product, prototyping, and engineering opportunities.</h2>
-        <p>I am open to internships, collaborations, and roles involving product development, rapid prototyping, medical technology, hardware systems, or AI-assisted design workflows.</p>
-      </div>
-      <div class="contact-actions">
-        <a class="button primary" href="https://www.linkedin.com/in/fu-jie-chin/" target="_blank" rel="noreferrer">LinkedIn</a>
-        <a class="button secondary" href="mailto:fujie.chin@gmail.com">Email</a>
+    <section id="leadership" class="section leadership-section" aria-labelledby="leadership-title">
+      <div class="section-heading compact-heading"><p class="section-label"><span>04</span> Leadership</p><h2 id="leadership-title">Leadership &amp; community.</h2></div>
+      <div class="leadership-list" id="leadership-list"></div>
+    </section>
+
+    <section id="recognition" class="section recognition-section" aria-labelledby="recognition-title">
+      <div class="section-heading compact-heading"><p class="section-label"><span>05</span> Recognition</p><h2 id="recognition-title">Awards, scholarships &amp; support.</h2></div>
+      <div class="recognition-list" id="recognition-list"></div>
+    </section>
+
+    <section id="contact" class="section contact-section" aria-labelledby="contact-title">
+      <p class="section-label"><span>06</span> Contact</p>
+      <div class="contact-layout"><div><h2 id="contact-title">Let's make<br>something useful.</h2><p>Open to engineering opportunities and collaborations in product development, hardware, and software.</p></div>
+        <div class="contact-actions">
+          <a class="contact-link" href="mailto:fujie.chin@gmail.com"><span class="contact-symbol" aria-hidden="true"><i data-lucide="mail"></i></span><span class="contact-copy"><strong>Email</strong><span>fujie.chin@gmail.com</span></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+          <a class="contact-link" href="https://www.linkedin.com/in/fu-jie-chin/" target="_blank" rel="noreferrer"><span class="contact-symbol linkedin-symbol" aria-hidden="true"><img class="linkedin-mark" src="assets/vendor/linkedin.svg" width="28" height="28" alt=""></span><span class="contact-copy"><strong>LinkedIn</strong><span>Chin Fu Jie</span></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+          <a class="contact-link" href="assets/documents/chin-fu-jie-resume.pdf" target="_blank" rel="noreferrer"><span class="contact-symbol resume-symbol" aria-hidden="true"><i data-lucide="file-down"></i></span><span class="contact-copy"><strong>R&eacute;sum&eacute;</strong><span>PDF</span></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+        </div>
       </div>
     </section>
   </main>
-
-  <footer class="footer">
-    <span>© 2026 Chin Fu Jie</span>
-    <span>Built with HTML, CSS, and JavaScript for GitHub Pages.</span>
-  </footer>
+  <footer class="footer"><span>&copy; 2026 Chin Fu Jie</span><span>Engineering with people in mind.</span><a href="#about" class="text-link">Back to top <i data-lucide="arrow-up" aria-hidden="true"></i></a></footer>
 
   <dialog class="project-modal" id="project-modal" aria-labelledby="modal-title">
-    <button class="icon-button close-button" type="button" aria-label="Close project details">×</button>
-    <div class="modal-content">
-      <p class="section-label" id="modal-category"></p>
-      <h2 id="modal-title"></h2>
-      <p id="modal-description"></p>
-      <div class="modal-tags" id="modal-tags"></div>
-      <ul id="modal-features"></ul>
-      <div class="modal-section" id="modal-gallery-section">
-        <h3>Project Gallery</h3>
-        <div class="media-gallery" id="modal-gallery"></div>
-      </div>
-      <div class="modal-section" id="modal-product-section">
-        <h3>Product Views</h3>
-        <div class="product-viewer" id="modal-product-viewer"></div>
-      </div>
-      <div class="modal-section" id="modal-showcase-section">
-        <h3 id="modal-showcase-title">Featured Materials</h3>
-        <div class="showcase-layout" id="modal-showcase"></div>
-      </div>
-      <div class="modal-section" id="modal-video-section">
-        <h3>Demo Video</h3>
-        <div id="modal-videos"></div>
-      </div>
-      <div class="modal-section" id="modal-doc-section">
-        <h3>Documents & Presentations</h3>
-        <div class="doc-grid" id="modal-docs"></div>
-      </div>
-    </div>
+    <div class="dialog-toolbar"><span>Project overview</span><div><a id="full-project-link" class="text-link" href="project.html">Full case study <i data-lucide="arrow-up-right" aria-hidden="true"></i></a><button class="icon-button" type="button" data-close-project aria-label="Close project details" title="Close project details"><i data-lucide="x" aria-hidden="true"></i></button></div></div>
+    <div id="modal-content" class="case-content"></div>
   </dialog>
-
-  <dialog class="lightbox" id="media-lightbox" aria-label="Media preview">
-    <button class="icon-button close-button" type="button" aria-label="Close media preview">×</button>
-    <div id="lightbox-content"></div>
-  </dialog>
+  <dialog class="lightbox" id="media-lightbox" aria-label="Image preview"><div class="lightbox-toolbar"><span id="lightbox-caption"></span><button class="icon-button" type="button" data-close-lightbox aria-label="Close image preview" title="Close image preview"><i data-lucide="x" aria-hidden="true"></i></button></div><img id="lightbox-image" alt=""></dialog>
+  <div id="status-message" class="sr-only" role="status"></div>
+  <noscript><p class="noscript-note">JavaScript is needed to browse project previews. You can still <a href="assets/documents/chin-fu-jie-resume.pdf">read my r&eacute;sum&eacute;</a> or <a href="mailto:fujie.chin@gmail.com">email me</a>.</p></noscript>
 </body>
 </html>
