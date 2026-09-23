@@ -448,6 +448,10 @@ function setupFocusGlide(element, items) {
     if (reducedMotion.matches) { position = target; manual = null; draw(); }
     refresh();
   }
+  function stepProject(direction) {
+    // Count rapid presses from the requested destination, even while it is still moving.
+    go((manual?.to ?? Math.round(position)) + direction);
+  }
   function expand(index) {
     if (selected !== null || busy) return;
     selected = index; manual = null; busy = true;
@@ -528,7 +532,7 @@ function setupFocusGlide(element, items) {
   }
   element.addEventListener('click', event => {
     const card = event.target.closest('[data-glide-project]');
-    if (suppressClick) { suppressClick = false; event.preventDefault(); event.stopPropagation(); return; }
+    if (suppressClick && event.target.closest('.glide-belt')) { suppressClick = false; event.preventDefault(); event.stopPropagation(); return; }
     if (card) {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
@@ -536,8 +540,8 @@ function setupFocusGlide(element, items) {
     }
     const dot = event.target.closest('[data-glide-dot]');
     if (dot) { const index = Number(dot.dataset.glideDot); go(index + Math.round((position - index) / items.length) * items.length); }
-    if (event.target.closest('[data-glide-next]')) go(Math.floor(position + .01) + 1);
-    if (event.target.closest('[data-glide-prev]')) go(Math.ceil(position - .01) - 1);
+    if (event.target.closest('[data-glide-next]')) stepProject(1);
+    if (event.target.closest('[data-glide-prev]')) stepProject(-1);
     if (event.target.closest('.glide-close')) collapse();
     if (event.target.closest('[data-glide-pause]')) {
       if (phoneLayout.matches) phonePaused = !phonePaused; else userPaused = !userPaused;
@@ -609,7 +613,7 @@ function setupFocusGlide(element, items) {
     if (event.key === 'Escape' && selected !== null) { event.preventDefault(); collapse(); return; }
     keyboardFocus = true; explicitPlay = false;
     if (selected === null && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
-      event.preventDefault(); go(Math.round(position) + (event.key === 'ArrowRight' ? 1 : -1));
+      event.preventDefault(); stepProject(event.key === 'ArrowRight' ? 1 : -1);
     }
     refresh();
   });
