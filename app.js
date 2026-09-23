@@ -1,5 +1,6 @@
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const compactLayout = window.matchMedia('(max-width: 900px)');
+const phoneLayout = window.matchMedia('(max-width: 620px)');
 const projects = portfolio.projects;
 const modal = document.querySelector('#project-modal');
 const lightbox = document.querySelector('#media-lightbox');
@@ -43,7 +44,7 @@ function renderHome() {
   if (!skills) return;
   skills.innerHTML = portfolio.skills.map(skill => `<span>${escapeHTML(skill)}</span>`).join('');
   document.querySelector('#experience-list').innerHTML = portfolio.experience.map((item, index) => `
-    <article class="experience-entry"><div class="experience-entry-clip"><div class="experience-entry-content"><p class="experience-date">${escapeHTML(item.date)}</p>
+    <article class="experience-entry"><div class="experience-entry-clip"><div class="experience-entry-content${item.project ? ' has-preview' : ''}">${internshipPreview(item, index)}<p class="experience-date">${escapeHTML(item.date)}</p>
       <h3><button type="button" data-open-internship="${index}" aria-expanded="false" aria-controls="internship-content">${escapeHTML(item.organisation)} ${icon('chevron-down')}</button></h3><p class="role">${escapeHTML(item.role)}</p>
       <p>${escapeHTML(item.text)}</p>
     </div></div></article>`).join('');
@@ -65,6 +66,14 @@ function renderHome() {
       : setupCarousel(element, ids.map(getProject)));
   });
   setupInternships();
+}
+
+function internshipPreview(item, index) {
+  const project = getProject(item.project);
+  if (!project) return '';
+  return `<button class="internship-preview" type="button" data-open-internship="${index}" aria-label="Explore ${escapeHTML(item.organisation)}" aria-expanded="false" aria-controls="internship-content" style="--preview-delay:${index * -3}s" hidden>
+    ${cover(project)}<img class="preview-photo" src="${project.gallery[0].src}" alt="${escapeHTML(project.gallery[0].caption)}" loading="lazy" width="216" height="168">
+  </button>`;
 }
 
 function setupCarousel(element, items) {
@@ -257,11 +266,12 @@ function setupFocusGlide(element, items) {
     <section class="glide-details" id="glide-details" aria-labelledby="glide-title" hidden>
       <button class="icon-button glide-close" type="button" aria-label="Collapse project" title="Collapse project">${icon('x')}</button>
       <div class="glide-story"><div class="glide-hero-slot" aria-hidden="true"></div>
-        <article class="glide-article"><span class="eyebrow" data-glide-category></span><h3 id="glide-title"></h3><p data-glide-summary></p><p class="glide-approach"></p>
+        <article class="glide-article"><header class="glide-heading"><span class="eyebrow" data-glide-category></span><h3 id="glide-title"></h3></header>
+          <div class="glide-body"><p data-glide-summary></p><p class="glide-approach"></p>
           <dl><div><dt>My focus</dt><dd data-glide-role></dd></div><div><dt>Outcome</dt><dd data-glide-outcome></dd></div></dl>
-          <a class="text-link" data-glide-full>Full case study ${icon('arrow-up-right')}</a>
+          <a class="text-link" data-glide-full>Full case study ${icon('arrow-up-right')}</a></div>
         </article>
-      </div><div class="glide-gallery"></div>
+      </div>
     </section>
   </div>
   <div class="glide-controls">
@@ -285,14 +295,26 @@ function setupFocusGlide(element, items) {
   let position = 0, selected = null, active = -1;
   let width = 0, cardWidth = 350, cardHeight = 390, collapsedHeight = 490;
   let focusScale = 1.1;
-  let inView = false, userPaused = false, keyboardFocus = false, explicitPlay = false;
+  let inView = false, userPaused = false, phonePaused = false, keyboardFocus = false, explicitPlay = false;
   let busy = false, pointerStart = null, suppressClick = false;
   let manual = null, frameId = 0, previousTime = null, settleTimer, suppressTimer;
-  let galleryAnimations = [];
+  let galleryReady = false, cleanupGallery = () => {};
+  let collapsePromise = null;
   const transitionDuration = () => reducedMotion.matches ? 0 : 850;
 
   function pose(index) {
     const distance = mod(position - index + cards.length / 2, cards.length) - cards.length / 2;
+    if (phoneLayout.matches) {
+      // A shallow orbit keeps the nearest post readable and hides the rear half of the ring.
+      const angle = distance * Math.PI / 2;
+      const depth = Math.cos(angle), front = Math.max(0, depth);
+      const scale = .54 + (focusScale - .54) * front;
+      const opacity = Math.abs(distance) > 2 ? 0 : depth >= 0
+        ? .12 + .88 * Math.pow(front, 1.4) : .12 * Math.max(0, 1 + depth / .25) ** 2;
+      return { x: width / 2 - Math.sin(angle) * width * .56 - cardWidth * scale / 2,
+        y: 16 + cardHeight * (focusScale - scale) / 2 - (1 - depth) * 54,
+        scale, opacity, muted: .3 * (1 - front) };
+    }
     const fraction = position - Math.floor(position);
     const slot = Math.round(distance - fraction);
     const backScale = compactLayout.matches ? .76 : .7;
@@ -322,7 +344,7 @@ function setupFocusGlide(element, items) {
       const projectIndex = index % items.length;
       const nearestCopy = mod(projectIndex + Math.round((position - projectIndex) / items.length) * items.length, cards.length);
       card.tabIndex = index === nearestCopy ? 0 : -1;
-      card.inert = point.x >= width || point.x + cardWidth * point.scale <= 0;
+      card.inert = point.opacity < .08 || point.x >= width || point.x + cardWidth * point.scale <= 0;
     });
     const next = mod(Math.round(position));
     if (active !== next) {
@@ -336,13 +358,13 @@ function setupFocusGlide(element, items) {
   }
   function drawExpanded() {
     if (selected === null) return;
-    const slot = heroSlot.getBoundingClientRect();
+    const slot = (heroSlot.querySelector('.image-gallery-track') || heroSlot).getBoundingClientRect();
     const bounds = stage.getBoundingClientRect();
     cards.forEach((card, index) => {
       if (index === selected) {
         card.style.setProperty('--glide-mute', 0);
         card.style.width = slot.width + 'px'; card.style.height = slot.height + 'px';
-        place(card, { x: slot.left - bounds.left, y: slot.top - bounds.top, scale: 1, opacity: 1 });
+        place(card, { x: slot.left - bounds.left, y: slot.top - bounds.top, scale: 1, opacity: galleryReady ? 0 : 1 });
         card.style.zIndex = '5';
       } else {
         const point = pose(index);
@@ -380,7 +402,15 @@ function setupFocusGlide(element, items) {
     else if (!busy) { sizeCards(); stage.style.height = collapsedHeight + 'px'; draw(); }
   }
   function canPlay() {
-    return !userPaused && (!keyboardFocus || explicitPlay) && !reducedMotion.matches;
+    return !(phoneLayout.matches ? phonePaused : userPaused) && (!keyboardFocus || explicitPlay) && !reducedMotion.matches;
+  }
+  function paintPause() {
+    const paused = phoneLayout.matches ? phonePaused : userPaused;
+    const label = paused ? 'Resume automatic rotation' : 'Pause automatic rotation';
+    pause.setAttribute('aria-label', label); pause.title = label;
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.innerHTML = icon(paused ? 'play' : 'pause');
+    refreshIcons();
   }
   function canAnimate() {
     return inView && !document.hidden && !modal?.open && !lightbox?.open && !busy && selected === null && !pointerStart;
@@ -404,8 +434,8 @@ function setupFocusGlide(element, items) {
       position = manual.from + (manual.to - manual.from) * eased;
       if (t === 1) manual = null;
     } else if (canPlay()) {
-      const velocity = .4 + 2.1 * Math.sin(Math.PI * position) ** 2;
-      position += dt * velocity / 5.8;
+      const velocity = phoneLayout.matches ? .22 + 1.9 * Math.sin(Math.PI * position) ** 2 : .4 + 2.1 * Math.sin(Math.PI * position) ** 2;
+      position += dt * velocity / (phoneLayout.matches ? 4.8 : 5.8);
     }
     draw();
     if (manual || canPlay()) frameId = requestAnimationFrame(frame);
@@ -418,18 +448,16 @@ function setupFocusGlide(element, items) {
     if (reducedMotion.matches) { position = target; manual = null; draw(); }
     refresh();
   }
-  function galleryFor(project) {
-    if (project.id === 'verbasense') return project.gallery.slice(1, 3);
-    if (project.id === 'snoreless') return [{ src: 'assets/previews/snoreless/snoreless-poster1.jpg', caption: 'Snoreless project poster.' }, ...project.gallery];
-    if (project.id === 'wbgt') return [...project.gallery, project.views[3]];
-    return [{ src: 'assets/previews/liftoff/liftoff-poster1.jpg', caption: 'The rising-seat mechanism.' }, project.gallery[1]];
-  }
   function expand(index) {
     if (selected !== null || busy) return;
     selected = index; manual = null; busy = true;
     refresh();
     const project = repeatedItems[index];
-    const origin = cards[index].getBoundingClientRect();
+    galleryReady = false;
+    element.dataset.galleryReady = 'false';
+    heroSlot.removeAttribute('aria-hidden');
+    heroSlot.innerHTML = renderImageGallery(project);
+    heroSlot.firstElementChild.inert = true;
     element.querySelector('[data-glide-category]').textContent = project.category;
     element.querySelector('#glide-title').textContent = project.title;
     element.querySelector('[data-glide-summary]').textContent = project.summary;
@@ -438,9 +466,9 @@ function setupFocusGlide(element, items) {
     element.querySelector('[data-glide-outcome]').textContent = project.outcome;
     const full = element.querySelector('[data-glide-full]');
     full.href = projectURL(project.id); full.dataset.openProject = project.id;
-    element.querySelector('.glide-gallery').innerHTML = galleryFor(project).map(item => imageFigure(item)).join('');
     refreshIcons();
     details.hidden = false;
+    cleanupGallery = setupImageGallery(heroSlot.firstElementChild);
     controls.inert = true;
     cards.forEach((card, i) => {
       card.inert = i !== index;
@@ -451,51 +479,52 @@ function setupFocusGlide(element, items) {
     void stage.offsetWidth;
     element.dataset.expanded = 'true';
     drawExpanded();
-    galleryAnimations.forEach(animation => animation.cancel());
-    galleryAnimations = [...element.querySelectorAll('.glide-gallery figure')].map((figure, i) => {
-      const bounds = figure.getBoundingClientRect();
-      const x = origin.left + origin.width / 2 - bounds.left - bounds.width / 2;
-      const y = origin.top + origin.height / 2 - bounds.top - bounds.height / 2;
-      return figure.animate([{ transform: `translate(${x}px,${y}px) scale(.3)`, opacity: 0 }, { transform: 'none', opacity: 1 }], {
-        duration: reducedMotion.matches ? 0 : 760, delay: reducedMotion.matches ? 0 : 90 + i * 90, easing: 'cubic-bezier(.22,.75,.25,1)', fill: 'both'
-      });
-    });
     if (cards[index].matches(':focus-visible')) close.focus({ preventScroll: true });
     status.textContent = `${project.title} expanded`;
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => { busy = false; stage.classList.remove('is-morphing'); }, transitionDuration() + 120);
+    settleTimer = setTimeout(() => {
+      busy = false; galleryReady = true;
+      element.dataset.galleryReady = 'true';
+      heroSlot.firstElementChild.inert = false;
+      cards[index].inert = true;
+      drawExpanded();
+      stage.classList.remove('is-morphing');
+    }, transitionDuration() + 120);
   }
-  function collapse() {
-    if (selected === null) return;
-    const opener = cards[selected], keyboard = details.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
-    const target = pose(selected), bounds = stage.getBoundingClientRect();
+  function collapse(forNavigation = false) {
+    if (selected === null) return collapsePromise || Promise.resolve();
+    let completeCollapse;
+    collapsePromise = new Promise(resolve => { completeCollapse = resolve; });
+    const opener = cards[selected], keyboard = !forNavigation && details.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
+    const bounds = stage.getBoundingClientRect();
     busy = true;
+    cleanupGallery(); cleanupGallery = () => {};
+    galleryReady = false;
+    element.dataset.galleryReady = 'false';
+    heroSlot.firstElementChild.inert = true;
     clearTimeout(settleTimer);
     stage.classList.add('is-morphing');
-    galleryAnimations.forEach(animation => animation.cancel());
-    galleryAnimations = [...element.querySelectorAll('.glide-gallery figure')].map(figure => {
-      const rect = figure.getBoundingClientRect();
-      const x = bounds.left + target.x + cardWidth * target.scale / 2 - rect.left - rect.width / 2;
-      const y = bounds.top + target.y + 90 - rect.top - rect.height / 2;
-      return figure.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${x}px,${y}px) scale(.3)`, opacity: 0 }], { duration: reducedMotion.matches ? 0 : 450, easing: 'cubic-bezier(.4,0,.4,1)', fill: 'both' });
-    });
     selected = null;
     element.dataset.expanded = 'false';
     details.inert = true;
     cards.forEach(card => { card.classList.remove('is-selected'); card.setAttribute('aria-expanded', 'false'); });
     sizeCards(); draw(); stage.style.height = collapsedHeight + 'px';
-    if (bounds.top + collapsedHeight < 120) {
+    if (!forNavigation && bounds.top + collapsedHeight < 120) {
       window.scrollTo({ top: window.scrollY + bounds.top - document.querySelector('.topbar').offsetHeight - 24, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
     }
     settleTimer = setTimeout(() => {
       details.hidden = true; details.inert = false; controls.inert = false;
+      heroSlot.innerHTML = ''; heroSlot.setAttribute('aria-hidden', 'true');
       cards.forEach(card => { card.inert = false; });
       busy = false; stage.classList.remove('is-morphing');
       measure();
       if (keyboard) opener.focus({ preventScroll: true });
       status.textContent = 'Selected projects';
       refresh();
+      completeCollapse();
+      collapsePromise = null;
     }, transitionDuration());
+    return collapsePromise;
   }
   element.addEventListener('click', event => {
     const card = event.target.closest('[data-glide-project]');
@@ -511,15 +540,12 @@ function setupFocusGlide(element, items) {
     if (event.target.closest('[data-glide-prev]')) go(Math.ceil(position - .01) - 1);
     if (event.target.closest('.glide-close')) collapse();
     if (event.target.closest('[data-glide-pause]')) {
-      userPaused = !userPaused; explicitPlay = !userPaused;
-      const label = userPaused ? 'Resume automatic rotation' : 'Pause automatic rotation';
-      pause.setAttribute('aria-label', label); pause.title = label;
-      pause.setAttribute('aria-pressed', String(userPaused));
-      pause.innerHTML = icon(userPaused ? 'play' : 'pause'); refreshIcons(); refresh();
+      if (phoneLayout.matches) phonePaused = !phonePaused; else userPaused = !userPaused;
+      explicitPlay = !(phoneLayout.matches ? phonePaused : userPaused);
+      paintPause();
+      if (phoneLayout.matches && phonePaused) go(Math.round(position), .55);
+      else refresh();
     }
-  });
-  document.addEventListener('pointerdown', event => {
-    if (selected !== null && !modal?.open && !lightbox?.open && !event.target.closest('.glide-details,.glide-post')) collapse();
   });
   belt.addEventListener('pointerdown', event => {
     if (selected !== null || busy || event.button !== 0 || !event.isPrimary) return;
@@ -529,7 +555,8 @@ function setupFocusGlide(element, items) {
     clearTimeout(suppressTimer);
     const backScale = compactLayout.matches ? .76 : .7;
     pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY, position,
-      stride: cardWidth * (focusScale + backScale) / 2 + (compactLayout.matches ? 14 : 22),
+      stride: phoneLayout.matches ? width * .88 : cardWidth * (focusScale + backScale) / 2 + (compactLayout.matches ? 14 : 22),
+      direction: phoneLayout.matches ? -1 : 1,
       dragging: false, lastX: event.clientX, lastTime: event.timeStamp, velocity: 0 };
     refresh();
   });
@@ -553,7 +580,7 @@ function setupFocusGlide(element, items) {
     gesture.velocity = elapsed > 100 ? 0 : gesture.velocity * .65 + (event.clientX - gesture.lastX) / elapsed * .35;
     gesture.lastX = event.clientX;
     gesture.lastTime = event.timeStamp;
-    position = gesture.position + dx / gesture.stride;
+    position = gesture.position + dx / gesture.stride * gesture.direction;
     draw();
   }, { passive: false });
   function finishDrag(event, cancelled = false) {
@@ -567,7 +594,7 @@ function setupFocusGlide(element, items) {
       clearTimeout(suppressTimer);
       suppressTimer = setTimeout(() => { suppressClick = false; }, 450);
       const velocity = !cancelled && event && event.timeStamp - gesture.lastTime < 90 ? gesture.velocity : 0;
-      const momentum = Math.max(-.35, Math.min(.35, velocity * 160 / gesture.stride));
+      const momentum = Math.max(-.35, Math.min(.35, velocity * 160 / gesture.stride * gesture.direction));
       go(Math.round(position + momentum), cancelled ? .3 : .45, true);
     }
     refresh();
@@ -606,21 +633,22 @@ function setupFocusGlide(element, items) {
   window.addEventListener('resize', measure, { passive: true });
   document.fonts?.ready.then(measure);
   document.addEventListener('visibilitychange', () => { if (document.hidden) finishDrag(null, true); refresh(); });
-  const preferenceChanged = () => { pause.disabled = reducedMotion.matches; refresh(); };
+  const preferenceChanged = () => { pause.disabled = reducedMotion.matches; paintPause(); refresh(); };
   reducedMotion.addEventListener('change', preferenceChanged);
+  phoneLayout.addEventListener('change', () => { explicitPlay = false; finishDrag(null, true); measure(); preferenceChanged(); });
   measure(); preferenceChanged();
-  return { refresh };
+  return { refresh, closeForNavigation: id => ['projects', 'compiled'].includes(id) ? Promise.resolve() : collapse(true) };
 }
 
 function renderInternship(item) {
   const project = getProject(item.project);
   return `<div class="internship-overview${project ? '' : ' internship-pending'}">
-    <div class="internship-copy-window"><header><p class="eyebrow">${escapeHTML(item.date)}</p><h3 id="internship-title">${escapeHTML(item.organisation)}</h3>
-      <p class="internship-role">${escapeHTML(item.role)}</p><p>${escapeHTML(project?.summary || item.text)}</p>
+    <div class="internship-copy-window"><div class="internship-copy"><header class="internship-heading"><p class="eyebrow">${escapeHTML(item.date)}</p><h3 id="internship-title">${escapeHTML(item.organisation)}</h3>
+      <p class="internship-role">${escapeHTML(item.role)}</p></header><div class="internship-summary"><p>${escapeHTML(project?.summary || item.text)}</p>
       ${project ? `<dl><div><dt>My focus</dt><dd>${escapeHTML(project.role)}</dd></div><div><dt>Outcome</dt><dd>${escapeHTML(project.outcome)}</dd></div></dl>` : '<p class="internship-pending-note">Project details and images forthcoming.</p>'}
-    </header></div>${project ? `<figure class="internship-hero"><button class="media-button" type="button" data-image="${escapeHTML(project.cover)}" data-caption="${escapeHTML(project.title)}" aria-label="Enlarge: ${escapeHTML(project.title)}">${cover(project, true)}<span class="media-zoom">${icon('maximize-2')}</span></button></figure>` : ''}
+    </div></div></div>${project ? `<figure class="internship-hero">${renderImageGallery(project)}</figure>` : ''}
     </div>${project ? `<div class="case-story">${[['The problem', project.problem], ['My contribution', project.contribution], ['The result', project.result]].map(([title, text]) => `<div class="internship-fold"><section class="internship-fold-content"><h4>${title}</h4><p>${escapeHTML(text)}</p></section></div>`).join('')}</div>
-    ${renderMedia(project)}${documents(project)}` : ''}`;
+    ${renderMedia(project, true)}${documents(project)}` : ''}`;
 }
 
 function setupInternships() {
@@ -634,8 +662,31 @@ function setupInternships() {
   let active = null, opener = null, revision = 0, heightAnimation = null;
   let animations = [], layers = [], overviewLayers = [], cleanupMedia = () => {};
   let sourceCard = null;
-  let closePromise = null, navigationRequest = 0;
-  const visible = { transform: 'none', clipPath: 'inset(0% 0% 0% 0%)' };
+  let closePromise = null;
+  const previews = [...section.querySelectorAll('.internship-preview')];
+  const previewToggle = section.querySelector('[data-preview-pause]');
+  let previewsInView = false, previewsPaused = false;
+  function refreshPreviews() {
+    previews.forEach(preview => { preview.hidden = !phoneLayout.matches; });
+    previewToggle.hidden = !phoneLayout.matches || active !== null;
+    previewToggle.disabled = reducedMotion.matches;
+    section.dataset.previewMotion = String(phoneLayout.matches && previewsInView && !previewsPaused && active === null && !section.classList.contains('has-open-internship') && !reducedMotion.matches && !document.hidden && !modal?.open && !lightbox?.open);
+  }
+  previewToggle.addEventListener('click', () => {
+    previewsPaused = !previewsPaused;
+    const label = `${previewsPaused ? 'Resume' : 'Pause'} internship previews`;
+    previewToggle.setAttribute('aria-label', label); previewToggle.title = label;
+    previewToggle.setAttribute('aria-pressed', String(previewsPaused));
+    previewToggle.innerHTML = icon(previewsPaused ? 'play' : 'pause');
+    refreshIcons(); refreshPreviews();
+  });
+  new IntersectionObserver(entries => { previewsInView = entries[0].isIntersecting; refreshPreviews(); }).observe(overview);
+  phoneLayout.addEventListener('change', refreshPreviews);
+  reducedMotion.addEventListener('change', refreshPreviews);
+  document.addEventListener('visibilitychange', refreshPreviews);
+  carousels.push({ refresh: refreshPreviews, closeForNavigation: id => id === 'experience' ? Promise.resolve() : close({ align: false, restoreFocus: false }) });
+  refreshPreviews();
+  const visible = { transform: 'none', clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 };
   const tuckedUp = { transform: 'translateY(-100%)', clipPath: visible.clipPath };
   function motionState(element, properties) {
     const style = getComputedStyle(element);
@@ -649,8 +700,8 @@ function setupInternships() {
   function heroOrigin(hero, cover) {
     const target = hero.getBoundingClientRect();
     const origin = cover?.getBoundingClientRect();
-    const track = cover?.closest('.rotary-track').getBoundingClientRect();
-    if (!origin || origin.right <= track.left || origin.left >= track.right) {
+    const track = cover?.closest('.rotary-track, .experience-list')?.getBoundingClientRect();
+    if (!origin || !track || !origin.width || origin.right <= track.left || origin.left >= track.right) {
       return { transform: 'translateY(-32px) scale(.92)', clipPath: 'inset(0% 0% 100% 0%)' };
     }
     return { transform: `translate(${origin.left - target.left}px,${origin.top - target.top}px) scale(${origin.width / target.width},${origin.height / target.height})`, clipPath: visible.clipPath };
@@ -659,7 +710,11 @@ function setupInternships() {
     const hero = content.querySelector('.internship-hero');
     const copy = content.querySelector('.internship-copy-window');
     const stacked = !hero || copy.offsetTop > hero.offsetTop + hero.offsetHeight / 2;
-    layers = [{ element: copy.querySelector('header'), closed: { ...visible, transform: stacked ? 'translateY(calc(-100% - 28px))' : 'translateX(calc(-100% - 32px))' }, duration: 900, delay: 180 }];
+    // Mobile titles sit above the gallery; animate the two text blocks independently.
+    const textParts = phoneLayout.matches ? [copy.querySelector('header'), copy.querySelector('.internship-summary')] : [copy.querySelector('.internship-copy')];
+    layers = textParts.map(element => ({ element, closed: phoneLayout.matches
+      ? { ...visible, transform: 'translateY(12px)', opacity: 0 }
+      : { ...visible, transform: stacked ? 'translateY(calc(-100% - 28px))' : 'translateX(calc(-100% - 32px))' }, duration: 900, delay: 180 }));
     if (hero) layers.push({ element: hero, closed: heroOrigin(hero, sourceCard?.querySelector('.cover')), duration: 1000, delay: 0 });
     content.querySelectorAll('.internship-fold-content').forEach((element, index) => {
       layers.push({ element, closed: element.closest('.internship-media-fold')
@@ -702,9 +757,10 @@ function setupInternships() {
     const token = ++revision;
     const keyboard = source.matches(':focus-visible');
     cleanupMedia();
-    sourceCard = section.querySelector(`[data-internship-project="${portfolio.experience[index].project}"]`);
+    sourceCard = phoneLayout.matches ? section.querySelector(`.internship-preview[data-open-internship="${index}"]`)
+      : section.querySelector(`[data-internship-project="${portfolio.experience[index].project}"]`);
     active = index;
-    opener = section.querySelector(`[data-open-internship="${index}"]`);
+    opener = section.querySelector(`h3 [data-open-internship="${index}"]`);
     paint();
     content.innerHTML = renderInternship(portfolio.experience[index]);
     content.querySelectorAll(':scope > .case-section').forEach(block => {
@@ -714,7 +770,7 @@ function setupInternships() {
       fold.append(block);
       block.classList.add('internship-fold-content');
     });
-    const leadImage = content.querySelector('.internship-hero img');
+    const leadImage = content.querySelector('.internship-hero .image-gallery-slide:not([data-gallery-clone]) img');
     if (leadImage) {
       const trigger = opener;
       trigger.setAttribute('aria-busy', 'true');
@@ -817,17 +873,6 @@ function setupInternships() {
   section.addEventListener('keydown', event => {
     if (event.key === 'Escape' && active !== null && !lightbox?.open && !modal?.open) { event.preventDefault(); close(); }
   });
-  document.addEventListener('click', async event => {
-    if ((active === null && !closePromise) || stage.contains(event.target) || event.target.closest('dialog') || modal?.open || lightbox?.open || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    const link = event.target.closest('a');
-    if (link?.getAttribute('href')?.startsWith('#') && document.getElementById(link.hash.slice(1))) {
-      event.preventDefault();
-      const request = ++navigationRequest;
-      // Resolve the destination after the detail view stops affecting page height.
-      await close({ align: false, restoreFocus: false });
-      if (request === navigationRequest) link.click();
-    } else close({ align: !link, restoreFocus: false });
-  });
   const resizeObserver = new ResizeObserver(() => {
     if (heightAnimation?.playState === 'running') {
       const height = (active === null ? overview : details).offsetHeight;
@@ -877,18 +922,43 @@ function setupNavigation() {
   const nav = document.querySelector('.nav');
   if (!nav) return;
   const header = document.querySelector('.topbar');
+  const navToggle = header.querySelector('[data-mobile-nav-toggle]');
+  const sectionLabel = navToggle.querySelector('[data-mobile-section]');
+  let labelAnimation;
   const links = [...nav.querySelectorAll('a')];
   const sections = links.map(link => document.querySelector(link.getAttribute('href')));
   let activeId = '';
   let target = null;
   let frame = 0;
   let settleTimer;
+  let navigationRevision = 0;
+
+  function setMenu(open, restoreFocus = false) {
+    const expanded = phoneLayout.matches && open;
+    header.classList.toggle('is-menu-open', expanded);
+    navToggle.setAttribute('aria-expanded', String(expanded));
+    nav.inert = phoneLayout.matches && !expanded;
+    if (restoreFocus && phoneLayout.matches) navToggle.focus({ preventScroll: true });
+  }
+  function refreshMobileMenu() {
+    navToggle.hidden = !phoneLayout.matches;
+    header.classList.toggle('has-mobile-navigation', phoneLayout.matches);
+    setMenu(false);
+    setActive(activeId || 'about', false);
+  }
 
   function setActive(id, centre = true) {
     const link = links.find(item => item.hash === '#' + id);
     if (!link) return;
     const changed = id !== activeId;
     activeId = id;
+    if (sectionLabel.textContent !== link.textContent) {
+      labelAnimation?.cancel();
+      sectionLabel.textContent = link.textContent;
+      if (phoneLayout.matches && !reducedMotion.matches) labelAnimation = sectionLabel.animate([
+        { opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }
+      ], { duration: 260, easing: 'ease-out' });
+    }
     links.forEach(item => {
       item.classList.toggle('is-active', item === link);
       if (item === link) item.setAttribute('aria-current', 'location');
@@ -904,6 +974,7 @@ function setupNavigation() {
     frame = 0;
     header.classList.toggle('is-scrolled', window.scrollY > 12);
     if (target) {
+      if (target.y === null) return;
       if (Math.abs(window.scrollY - target.y) <= 2) target = null;
       else return;
     }
@@ -926,11 +997,28 @@ function setupNavigation() {
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => { target = null; sync(); }, 1400);
   }
-  document.addEventListener('click', event => {
+  navToggle.addEventListener('click', () => setMenu(!header.classList.contains('is-menu-open')));
+  navToggle.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown') { event.preventDefault(); setMenu(true); links.find(link => link.classList.contains('is-active'))?.focus(); }
+  });
+  nav.addEventListener('click', event => { if (phoneLayout.matches && event.target.closest('a')) setMenu(false); });
+  header.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && header.classList.contains('is-menu-open')) { event.preventDefault(); setMenu(false, true); }
+  });
+  header.addEventListener('focusout', event => { if (!header.contains(event.relatedTarget)) setMenu(false); });
+  document.addEventListener('pointerdown', event => { if (!header.contains(event.target)) setMenu(false); });
+  phoneLayout.addEventListener('change', refreshMobileMenu);
+  document.addEventListener('click', async event => {
     const link = event.target.closest('a[href^="#"]');
     if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || link.hash === '#main') return;
     if (!document.getElementById(link.hash.slice(1))) return;
     event.preventDefault();
+    const request = ++navigationRevision;
+    // Close other inline sections before measuring the destination on any screen size.
+    target = { id: link.hash.slice(1), y: null };
+    setActive(target.id === 'compiled' ? 'projects' : target.id);
+    await Promise.all(carousels.map(carousel => carousel.closeForNavigation?.(link.hash.slice(1))));
+    if (request !== navigationRevision) return;
     navigate(link.hash.slice(1));
   });
   window.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(sync); }, { passive: true });
@@ -949,6 +1037,7 @@ function setupNavigation() {
       if (Number.isFinite(event.state?.portfolioScroll)) window.scrollTo({ top: event.state.portfolioScroll, behavior: 'instant' });
     } else if (location.hash) navigate(location.hash.slice(1), false);
   });
+  refreshMobileMenu();
   sync();
   if (location.hash && !location.hash.startsWith('#project-')) requestAnimationFrame(() => navigate(location.hash.slice(1), false));
 }
@@ -957,6 +1046,127 @@ function imageFigure(item, className = '') {
   return `<figure class="${className}"><button class="media-button" type="button" data-image="${item.src}" data-caption="${escapeHTML(item.caption)}" aria-label="Enlarge: ${escapeHTML(item.caption)}">
     <img src="${item.src}" alt="${escapeHTML(item.caption)}" loading="lazy" ${item.position ? `style="object-position:${item.position}"` : ''}><span class="media-zoom">${icon('maximize-2')}</span>
     </button><figcaption>${escapeHTML(item.caption)}</figcaption></figure>`;
+}
+function projectImages(project) {
+  const extra = {
+    snoreless: [
+      { src: 'assets/previews/snoreless/snoreless-poster1.jpg', caption: 'Snoreless project poster.' },
+      { src: 'assets/projects/snoreless/prototype.jpg', caption: 'Presenting Snoreless at ARTSIC.' },
+      { src: 'assets/previews/snoreless/merit-best-poster-award1.jpg', caption: 'Merit & Best Poster Award' }
+    ],
+    liftoff: [{ src: 'assets/previews/liftoff/liftoff-poster1.jpg', caption: 'LiftOff project poster.' }],
+    kokoni: [
+      { src: 'assets/previews/kokoni/moxin-slide21.jpg', caption: 'From a sketch to an editable Blender model. Slide 21.' },
+      { src: 'assets/previews/kokoni/moxin-slide25.jpg', caption: 'The Blender plug-in. Slide 25.' }
+    ]
+  };
+  const images = [{ src: project.cover, preview: `assets/thumbnails/${project.id}-720.webp`, caption: project.gallery.find(item => item.src === project.cover)?.caption || project.title },
+    ...project.gallery, ...(project.views || []), ...(extra[project.id] || [])];
+  return images.filter((item, index) => images.findIndex(other => other.src === item.src) === index);
+}
+function renderImageGallery(project) {
+  const images = projectImages(project);
+  const slide = (item, index, clone = false) => `
+    <div class="image-gallery-slide" data-gallery-index="${index}" ${clone ? 'data-gallery-clone aria-hidden="true" inert' : `role="group" aria-roledescription="slide" aria-label="${index + 1} of ${images.length}"${index ? ' inert' : ''}`}>
+      <button class="media-button" type="button" data-image="${escapeHTML(item.src)}" data-caption="${escapeHTML(item.caption)}" aria-label="Enlarge: ${escapeHTML(item.caption)}">
+        <img src="${escapeHTML(item.preview || item.src)}" alt="${escapeHTML(item.caption)}" loading="${index === 0 ? 'eager' : 'lazy'}" draggable="false" width="720" height="450">
+      </button>
+      ${images.length > 1 ? `<button class="image-gallery-edge" type="button" data-gallery-prev aria-label="Previous image" title="Previous image">${icon('chevron-left')}</button><button class="image-gallery-edge" type="button" data-gallery-next aria-label="Next image" title="Next image">${icon('chevron-right')}</button>` : ''}
+      <button class="image-gallery-zoom" type="button" data-image="${escapeHTML(item.src)}" data-caption="${escapeHTML(item.caption)}" aria-label="Expand image" title="Expand image">${icon('maximize-2')}</button>
+    </div>`;
+  return `<div class="image-gallery" data-image-gallery role="region" aria-roledescription="carousel" aria-label="${escapeHTML(project.title)} images">
+    <div class="image-gallery-track" tabindex="0" aria-label="Project images">${images.length > 1 ? slide(images.at(-1), images.length - 1, true) : ''}${images.map((item, index) => slide(item, index)).join('')}${images.length > 1 ? slide(images[0], 0, true) : ''}</div>
+    <div class="image-gallery-dots" ${images.length < 2 ? 'hidden' : ''}>${images.map((item, index) => `<button type="button" data-gallery-dot="${index}" aria-label="Show image ${index + 1} of ${images.length}" aria-current="${index === 0}" title="${escapeHTML(item.caption)}"></button>`).join('')}</div>
+    <p class="image-gallery-caption" data-gallery-caption aria-live="polite" aria-atomic="true">${escapeHTML(images[0].caption)}</p>
+  </div>`;
+}
+function setupImageGallery(viewer) {
+  viewer.dataset.galleryInitialized = 'true';
+  const track = viewer.querySelector('.image-gallery-track');
+  const slides = [...track.children];
+  const originals = slides.filter(slide => !slide.hasAttribute('data-gallery-clone'));
+  const count = originals.length, offset = count > 1 ? 1 : 0;
+  const dots = [...viewer.querySelectorAll('[data-gallery-dot]')];
+  const caption = viewer.querySelector('[data-gallery-caption]');
+  const controller = new AbortController();
+  const options = { signal: controller.signal };
+  let index = 0, drag = null, suppressClick = false, suppressTimer, settleTimer;
+  let width = track.clientWidth;
+  const mod = value => (value % count + count) % count;
+  const slot = () => Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / (width || 1))));
+  const paint = () => {
+    if (width !== track.clientWidth) return;
+    const next = mod(slot() - offset);
+    dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === next)));
+    originals.forEach((slide, i) => { slide.inert = i !== next; });
+    if (next !== index) caption.textContent = originals[next].querySelector('.media-button').dataset.caption;
+    index = next;
+  };
+  const scrollToSlot = (next, instant = false) => track.scrollTo({ left: next * width, behavior: instant || reducedMotion.matches ? 'instant' : 'smooth' });
+  // Duplicate end slides make the wrap a one-photo swipe, then rebase without visible movement.
+  const settle = () => {
+    clearTimeout(settleTimer);
+    if (drag || !offset || width !== track.clientWidth) return;
+    const current = slot();
+    if (current === 0 || current === count + 1) scrollToSlot(mod(current - offset) + offset, true);
+    paint();
+  };
+  const go = next => {
+    if (count < 2) return;
+    settle();
+    scrollToSlot(next < 0 ? 0 : next >= count ? count + 1 : next + offset);
+  };
+  viewer.addEventListener('click', event => {
+    if (suppressClick) { event.preventDefault(); event.stopPropagation(); suppressClick = false; return; }
+    const dot = event.target.closest('[data-gallery-dot]');
+    if (dot) go(Number(dot.dataset.galleryDot));
+    if (event.target.closest('[data-gallery-prev]')) go(index - 1);
+    if (event.target.closest('[data-gallery-next]')) go(index + 1);
+  }, { ...options, capture: true });
+  viewer.addEventListener('keydown', event => {
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      go(event.key === 'Home' ? 0 : event.key === 'End' ? count - 1 : index + (event.key === 'ArrowRight' ? 1 : -1));
+    }
+  }, options);
+  track.addEventListener('scroll', () => {
+    if (width !== track.clientWidth) return;
+    paint(); clearTimeout(settleTimer); settleTimer = setTimeout(settle, 160);
+  }, { ...options, passive: true });
+  track.addEventListener('scrollend', settle, options);
+  // Touch uses native scrolling; mouse drags provide the same direct manipulation on laptops.
+  track.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    settle(); clearTimeout(suppressTimer); suppressClick = false;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: track.scrollLeft, moved: false };
+  }, options);
+  track.addEventListener('pointermove', event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    if (!drag.moved && Math.abs(event.clientY - drag.y) > Math.abs(dx) + 6) { drag = null; return; }
+    if (!drag.moved && Math.abs(dx) < 6) return;
+    if (!drag.moved) { drag.moved = true; track.setPointerCapture(event.pointerId); track.classList.add('is-dragging'); }
+    event.preventDefault(); track.scrollLeft = drag.left - dx;
+  }, options);
+  const finishDrag = event => {
+    if (!drag || (event?.pointerId !== undefined && event.pointerId !== drag.id)) return;
+    const previous = drag; drag = null;
+    const target = slot();
+    if (track.hasPointerCapture(previous.id)) track.releasePointerCapture(previous.id);
+    track.classList.remove('is-dragging');
+    if (previous.moved) {
+      suppressClick = true; suppressTimer = setTimeout(() => { suppressClick = false; }, 450);
+      scrollToSlot(target);
+    }
+  };
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => track.addEventListener(type, finishDrag, options));
+  track.addEventListener('dragstart', event => event.preventDefault(), options);
+  window.addEventListener('blur', finishDrag, options);
+  const resize = new ResizeObserver(() => {
+    if (track.clientWidth && track.clientWidth !== width) { width = track.clientWidth; scrollToSlot(index + offset, true); }
+  });
+  scrollToSlot(offset, true); resize.observe(track); paint();
+  return () => { controller.abort(); resize.disconnect(); clearTimeout(suppressTimer); clearTimeout(settleTimer); };
 }
 function gallery(project) {
   const compact = project.id === 'cellwave' ? 'compact-gallery' : project.id === 'liftoff' ? 'liftoff-gallery' : '';
@@ -970,16 +1180,16 @@ function documents(project) {
   return `<section class="case-section"><h3>Reports & presentations</h3><div class="doc-grid">${project.documents.map(doc => `
     <a class="doc-link" href="${doc.href}" target="_blank" rel="noreferrer"><img src="${doc.preview}" alt="" loading="lazy" width="110" height="90"><div><strong>${escapeHTML(doc.title)}</strong><span>${escapeHTML(doc.meta)}</span></div>${icon('arrow-up-right')}</a>`).join('')}</div></section>`;
 }
-function renderMedia(project) {
+function renderMedia(project, imagesInGallery = false) {
   if (project.media === 'verbasense') return `<section class="case-section"><h3>The feedback system in action</h3>${videoFigure('assets/projects/verbasense/demo-compressed.mp4', 'Verbasense prototype demonstration.', 'assets/projects/verbasense/poster.jpg')}</section>${gallery(project)}`;
   if (project.media === 'cellwave') return `
     <section class="case-section alignment-section"><div class="media-section-heading alignment-heading"><h3>Cartridge Alignment Program</h3><div><button class="icon-button" type="button" data-replay-alignment aria-label="Replay all alignment videos" title="Replay all alignment videos">${icon('rotate-ccw')}</button><button class="icon-button" type="button" data-pause-alignment aria-label="Pause all alignment videos" title="Pause all alignment videos">${icon('pause')}</button></div></div>
       <div class="alignment-grid">${['media1.mp4', 'media2.mp4', 'media3-2x.mp4'].map((file, i) => `<figure><video data-visible-play controls muted playsinline preload="metadata" poster="assets/thumbnails/alignment-${i + 1}.jpg" src="assets/projects/cellwave/videos/${file}"></video><figcaption>${['1st run', '2nd run', '3rd run · 2x speed'][i]}</figcaption></figure>`).join('')}</div>
     </section>
-    <section class="case-section"><h3>From hand-cut parts to repeatable moulding</h3><p>I proposed casting the PDMS parts in a mould, then tested successive PLA and resin iterations. The resulting workflow was adopted into standard procedure.</p><div class="before-after">
+    ${imagesInGallery ? '' : `<section class="case-section"><h3>From hand-cut parts to repeatable moulding</h3><p>I proposed casting the PDMS parts in a mould, then tested successive PLA and resin iterations. The resulting workflow was adopted into standard procedure.</p><div class="before-after">
       ${imageFigure({ src: 'assets/projects/cellwave/old-pdms-cutting.jpg', caption: 'Before: manual cutting and punching.' })}
       ${imageFigure({ src: 'assets/projects/cellwave/pdms-mould-3.jpg', caption: 'After: a PDMS part from the mould development process.' })}
-    </div></section>${gallery(project)}`;
+    </div></section>${gallery(project)}`}`;
   if (project.media === 'wbgt') return `
     <section class="case-section"><h3>A closer look at the prototype</h3><div class="product-viewer">
       <div class="product-track">${project.views.map(view => imageFigure(view)).join('')}</div>
@@ -998,7 +1208,7 @@ function renderMedia(project) {
       <figure><div class="ratio-media"><button class="media-button" type="button" data-image="assets/previews/liftoff/liftoff-poster1.jpg" data-caption="LiftOff project poster" aria-label="Enlarge LiftOff project poster"><img src="assets/previews/liftoff/liftoff-poster1.jpg" alt="LiftOff project poster" loading="lazy"><span class="media-zoom">${icon('maximize-2')}</span></button></div><figcaption>The mechanism and project overview.</figcaption></figure>
       <figure><div class="ratio-media"><video data-match-ratio controls playsinline preload="metadata" src="assets/projects/liftoff/working-video.mp4" poster="assets/thumbnails/liftoff-demo.jpg"></video></div><figcaption>Original working-prototype demonstration.</figcaption></figure>
     </div></section>${gallery(project)}`;
-  return `<section class="case-section"><h3>From sketch to Blender</h3><div class="slide-grid">
+  return imagesInGallery ? '' : `<section class="case-section"><h3>From sketch to Blender</h3><div class="slide-grid">
     ${imageFigure({ src: 'assets/previews/kokoni/moxin-slide21.jpg', caption: 'The workflow: initial sketch, KOKONI AI, and an editable Blender model. Slide 21.' })}
     ${imageFigure({ src: 'assets/previews/kokoni/moxin-slide25.jpg', caption: 'The Blender plug-in. Slide 25.' })}
     ${imageFigure({ src: 'assets/previews/kokoni/moxin-slide26.jpg', caption: 'Image-to-model results in Blender. Slide 26.' })}
@@ -1016,11 +1226,24 @@ function renderCase(project, fullPage = false) {
 
 function setupCaseMedia(root, scrollRoot = null) {
   const cleanups = [];
+  root.querySelectorAll('[data-image-gallery]').forEach(viewer => cleanups.push(setupImageGallery(viewer)));
   const videos = [...root.querySelectorAll('video')];
   const visibilityVideos = [...root.querySelectorAll('[data-visible-play]')];
   const states = new Map(visibilityVideos.map(video => [video, { started: false, visible: false, visibilityPaused: false, userPaused: false }]));
+  const pauseAlignment = root.querySelector('[data-pause-alignment]');
+  function paintAlignment() {
+    if (!pauseAlignment) return;
+    const paused = visibilityVideos.every(video => video.paused || video.ended);
+    const label = `${paused ? 'Play' : 'Pause'} all alignment videos`;
+    pauseAlignment.setAttribute('aria-label', label); pauseAlignment.title = label;
+    pauseAlignment.innerHTML = icon(paused ? 'play' : 'pause'); refreshIcons();
+  }
+  const sizeAlignmentControls = () => visibilityVideos.forEach(video => { video.controls = !phoneLayout.matches; });
+  sizeAlignmentControls();
+  phoneLayout.addEventListener('change', sizeAlignmentControls);
   async function play(video, state) {
-    try { await video.play(); state.started = true; state.visibilityPaused = false; } catch { /* Native controls remain available when autoplay is blocked. */ }
+    try { await video.play(); state.started = true; state.visibilityPaused = false; } catch { /* Shared and native controls remain available when autoplay is blocked. */ }
+    paintAlignment();
   }
   const observer = new IntersectionObserver(entries => {
     for (const entry of entries) {
@@ -1033,15 +1256,23 @@ function setupCaseMedia(root, scrollRoot = null) {
   }, { root: scrollRoot, threshold: [0, .35] });
   visibilityVideos.forEach(video => {
     const state = states.get(video);
-    video.addEventListener('pause', () => { if (state.visible && !state.visibilityPaused && !video.ended) state.userPaused = true; });
-    video.addEventListener('play', () => { state.started = true; state.userPaused = false; });
+    video.addEventListener('pause', () => { if (state.visible && !state.visibilityPaused && !video.ended) state.userPaused = true; paintAlignment(); });
+    video.addEventListener('play', () => { state.started = true; state.userPaused = false; paintAlignment(); });
+    video.addEventListener('ended', paintAlignment);
     observer.observe(video);
   });
   root.querySelector('[data-replay-alignment]')?.addEventListener('click', () => {
     visibilityVideos.forEach(video => { const state = states.get(video); state.userPaused = false; state.visibilityPaused = false; video.currentTime = 0; play(video, state); });
   });
   root.querySelector('[data-pause-alignment]')?.addEventListener('click', () => {
-    visibilityVideos.forEach(video => { states.get(video).userPaused = true; video.pause(); });
+    if (visibilityVideos.every(video => video.paused || video.ended)) {
+      const restart = visibilityVideos.every(video => video.ended);
+      visibilityVideos.forEach(video => {
+        if (restart) video.currentTime = 0;
+        if (!video.ended) { states.get(video).userPaused = false; play(video, states.get(video)); }
+      });
+    } else visibilityVideos.forEach(video => { states.get(video).userPaused = true; video.pause(); });
+    paintAlignment();
   });
   const visibilityChange = () => {
     if (document.hidden) visibilityVideos.forEach(video => { if (!video.paused) { states.get(video).visibilityPaused = true; video.pause(); } });
@@ -1079,7 +1310,8 @@ function setupCaseMedia(root, scrollRoot = null) {
     track.addEventListener('scroll', paint, { passive: true });
     paint();
   }
-  cleanups.push(() => observer.disconnect(), () => document.removeEventListener('visibilitychange', visibilityChange), () => reducedMotion.removeEventListener('change', motionChange));
+  paintAlignment();
+  cleanups.push(() => observer.disconnect(), () => document.removeEventListener('visibilitychange', visibilityChange), () => reducedMotion.removeEventListener('change', motionChange), () => phoneLayout.removeEventListener('change', sizeAlignmentControls));
   return () => { cleanups.forEach(cleanup => cleanup()); videos.forEach(video => video.pause()); };
 }
 

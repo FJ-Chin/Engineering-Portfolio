@@ -12,17 +12,19 @@
   <meta name="theme-color" content="#f8f9fa">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/inter-latin-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=20260914b">
+  <link rel="stylesheet" href="styles.css?v=20260923a">
+  <link rel="stylesheet" href="mobile.css?v=20260923c" media="(max-width: 620px)">
   <script defer src="assets/vendor/lucide.min.js"></script>
   <script defer src="portfolio-data.js?v=20260912b"></script>
-  <script defer src="app.js?v=20260914b"></script>
+  <script defer src="app.js?v=20260923c"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="#about" aria-label="Chin Fu Jie, about me"><span class="brand-mark">CFJ<span>.</span></span><span class="brand-name">Chin Fu Jie</span></a>
-      <nav class="nav" aria-label="Primary navigation">
+      <button type="button" class="mobile-nav-toggle" data-mobile-nav-toggle aria-controls="primary-navigation" aria-expanded="false" aria-label="Open section navigation" hidden><span data-mobile-section>About</span><i data-lucide="chevron-down" aria-hidden="true"></i></button>
+      <nav class="nav" id="primary-navigation" aria-label="Primary navigation">
         <span class="nav-indicator" aria-hidden="true"></span>
         <a href="#about" class="is-active" aria-current="location">About</a>
         <a href="#projects">Selected Work</a>
@@ -97,7 +99,7 @@
     </section>
 
     <section id="experience" class="section experience-section" aria-labelledby="experience-title">
-      <div class="section-heading compact-heading"><p class="section-label"><span>03</span> Experience</p><h2 id="experience-title">Internship work that improves real workflows.</h2></div>
+      <div class="section-heading compact-heading"><p class="section-label"><span>03</span> Experience</p><h2 id="experience-title">Internship work that improves real workflows.</h2><button class="icon-button internship-preview-toggle" type="button" data-preview-pause aria-label="Pause internship previews" title="Pause internship previews" aria-pressed="false" hidden><i data-lucide="pause" aria-hidden="true"></i></button></div>
       <div class="experience-stage">
       <div class="experience-layout">
         <div class="experience-list" id="experience-list"></div>
