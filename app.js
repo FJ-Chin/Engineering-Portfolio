@@ -5,7 +5,7 @@ const projects = portfolio.projects;
 const modal = document.querySelector('#project-modal');
 const lightbox = document.querySelector('#media-lightbox');
 const carousels = [];
-const carouselInterval = 3450;
+const carouselInterval = 4450;
 let mediaCleanup = () => {};
 let dialogOwnsHistory = false;
 
@@ -17,7 +17,106 @@ function refreshIcons() { window.lucide?.createIcons({ attrs: { 'aria-hidden': '
 function projectURL(id) { return `project.html?project=${encodeURIComponent(id)}`; }
 function getProject(id) { return projects.find(project => project.id === id); }
 function cover(project, eager = false) {
-  return `<span class="cover fit-${project.coverFit} tone-${project.tone}"><img src="assets/thumbnails/${project.id}-720.webp" srcset="assets/thumbnails/${project.id}-720.webp 720w, assets/thumbnails/${project.id}-1440.webp 1440w" sizes="(max-width: 620px) 85vw, (max-width: 900px) 50vw, 350px" alt="${escapeHTML(project.shortTitle)}" width="720" height="450" draggable="false" loading="${eager ? 'eager' : 'lazy'}"></span>`;
+  const thumbnail = project.thumbnail || project.id;
+  return `<span class="cover fit-${project.coverFit} tone-${project.tone}" style="--cover-position:${escapeHTML(project.coverPosition || 'center')}"><img src="assets/thumbnails/${thumbnail}-720.webp" srcset="assets/thumbnails/${thumbnail}-720.webp 720w, assets/thumbnails/${thumbnail}-1440.webp 1440w" sizes="(max-width: 620px) 85vw, (max-width: 900px) 50vw, 350px" alt="${escapeHTML(project.shortTitle)}" width="720" height="450" draggable="false" loading="${eager ? 'eager' : 'lazy'}"></span>`;
+}
+
+function coverImageFrame(frame, ratio, cropped, position = [.5, .5], zoom = 1) {
+  const width = cropped ? Math.max(frame.width, frame.height * ratio) : frame.width;
+  const height = width / ratio;
+  const x = (frame.width - width) * position[0], y = (frame.height - height) * position[1];
+  return {
+    left: frame.width / 2 + (x - frame.width / 2) * zoom,
+    top: frame.height / 2 + (y - frame.height / 2) * zoom,
+    width: width * zoom, height: height * zoom
+  };
+}
+
+// Animate the crop window and its image separately. The image keeps its natural
+// proportions while the window reveals (or conceals) its outer edges.
+function createCoverTransition(source, viewer, stage) {
+  const track = viewer.querySelector('.image-gallery-track');
+  const destination = viewer.querySelector('.image-gallery-slide:not([data-gallery-clone]) .media-button');
+  const anchor = source.cloneNode(false);
+  anchor.classList.add('cover-anchor');
+  const photo = source.querySelector('img');
+  const ratio = photo.naturalWidth / photo.naturalHeight;
+  const photoStyle = getComputedStyle(photo);
+  const position = photoStyle.objectPosition.split(' ').map(value => parseFloat(value) / 100);
+  const zoom = photoStyle.transform === 'none' ? 1 : new DOMMatrixReadOnly(photoStyle.transform).a;
+  const originalStyle = photo.getAttribute('style');
+  const panTime = photo.getAnimations().find(animation => animation.animationName === 'internship-preview-pan')?.currentTime;
+  viewer.classList.add('cover-gallery');
+  viewer.style.setProperty('--gallery-cover-ratio', String(ratio));
+  let flight = null, animations = [];
+
+  function geometry(node) {
+    const rect = node.getBoundingClientRect(), bounds = stage.getBoundingClientRect();
+    const card = node.closest('.rotary-card');
+    const style = card && getComputedStyle(card);
+    const matrix = style && new DOMMatrixReadOnly(style.transform);
+    const angle = matrix ? Math.atan2(matrix.b, matrix.a) + (parseFloat(style.rotate) || 0) * Math.PI / 180 : 0;
+    const frameRatio = angle ? node.clientWidth / node.clientHeight : rect.width / rect.height;
+    const width = rect.width / (Math.abs(Math.cos(angle)) + Math.abs(Math.sin(angle)) / frameRatio);
+    const height = width / frameRatio;
+    return {
+      left: rect.left + rect.width / 2 - bounds.left - width / 2,
+      top: rect.top + rect.height / 2 - bounds.top - height / 2,
+      width, height, angle
+    };
+  }
+  const boxStyle = box => Object.fromEntries(['left', 'top', 'width', 'height'].map(key => [key, box[key] + 'px']));
+  const frameStyle = frame => ({ ...boxStyle(frame), transform: `rotate(${frame.angle}rad)` });
+  function restorePhotoStyle() {
+    if (originalStyle === null) photo.removeAttribute('style');
+    else photo.setAttribute('style', originalStyle);
+  }
+  function lift(origin) {
+    flight = document.createElement('div');
+    flight.className = 'cover-flight';
+    Object.assign(flight.style, frameStyle(origin));
+    flight.append(source);
+    stage.append(flight);
+    viewer.dataset.coverMoving = 'true';
+  }
+  async function travel(from, to, opening, duration) {
+    const fromPhoto = coverImageFrame(from, ratio, opening, position, opening ? zoom : 1);
+    const toPhoto = coverImageFrame(to, ratio, !opening, position, opening ? 1 : zoom);
+    Object.assign(flight.style, frameStyle(to));
+    Object.assign(photo.style, boxStyle(toPhoto), { position: 'absolute', maxWidth: 'none', transform: 'none', objectFit: 'fill' });
+    const options = {
+      duration: reducedMotion.matches ? 0 : duration,
+      easing: 'cubic-bezier(.22,.75,.25,1)'
+    };
+    animations = [flight.animate([frameStyle(from), frameStyle(to)], options), photo.animate([boxStyle(fromPhoto), boxStyle(toPhoto)], options)];
+    await Promise.all(animations.map(animation => animation.finished.catch(() => {})));
+    animations = [];
+  }
+  return {
+    async open(duration = 1050) {
+      const from = geometry(source);
+      source.replaceWith(anchor);
+      lift(from);
+      await travel(from, geometry(track), true, duration);
+      destination.replaceChildren(source);
+      restorePhotoStyle();
+      delete viewer.dataset.coverMoving;
+      flight.remove(); flight = null;
+    },
+    async close(duration = 1050) {
+      const from = geometry(track);
+      lift(from);
+      await travel(from, geometry(anchor), false, duration);
+      anchor.replaceWith(source);
+      restorePhotoStyle();
+      if (panTime != null) {
+        const pan = photo.getAnimations().find(animation => animation.animationName === 'internship-preview-pan');
+        if (pan) pan.currentTime = panTime;
+      }
+      flight.remove(); flight = null;
+    },
+    finish() { animations.forEach(animation => animation.finish()); }
+  };
 }
 
 function renderProjects(filter = 'All') {
@@ -60,7 +159,7 @@ function renderHome() {
   }).join('');
   renderProjects();
   document.querySelectorAll('[data-carousel]').forEach(element => {
-    const ids = element.dataset.carousel === 'projects' ? ['verbasense', 'snoreless', 'wbgt', 'liftoff'] : ['cellwave', 'kokoni'];
+    const ids = element.dataset.carousel === 'projects' ? ['vantage', 'verbasense', 'snoreless', 'wbgt', 'liftoff'] : ['cellwave', 'kokoni', 'digital-place-vision'];
     carousels.push(element.dataset.carousel === 'projects'
       ? setupFocusGlide(element, ids.map(getProject))
       : setupCarousel(element, ids.map(getProject)));
@@ -72,7 +171,7 @@ function internshipPreview(item, index) {
   const project = getProject(item.project);
   if (!project) return '';
   return `<button class="internship-preview" type="button" data-open-internship="${index}" aria-label="Explore ${escapeHTML(item.organisation)}" aria-expanded="false" aria-controls="internship-content" style="--preview-delay:${index * -3}s" hidden>
-    ${cover(project)}<img class="preview-photo" src="${project.gallery[0].src}" alt="${escapeHTML(project.gallery[0].caption)}" loading="lazy" width="216" height="168">
+    ${cover(project)}
   </button>`;
 }
 
@@ -252,7 +351,19 @@ function setupCarousel(element, items) {
   reducedMotion.addEventListener('change', onPreferenceChange);
   document.addEventListener('visibilitychange', refreshTimer);
   onPreferenceChange();
-  return { refresh: refreshTimer };
+  function focusProject(id) {
+    const index = items.findIndex(project => project.id === id);
+    if (index < 0) return;
+    clearHandoff();
+    // Reposition beneath the expanded view, before the return animation starts.
+    element.classList.add('is-restoring');
+    active = index;
+    paint(); setLayers();
+    if (compactLayout.matches) track.scrollTo({ left: slideOffset(active), behavior: 'instant' });
+    void track.offsetWidth;
+    element.classList.remove('is-restoring');
+  }
+  return { refresh: refreshTimer, element, focusProject };
 }
 
 function setupFocusGlide(element, items) {
@@ -279,7 +390,7 @@ function setupFocusGlide(element, items) {
     <div class="glide-dots">${items.map((project, index) => `<button class="glide-dot" type="button" data-glide-dot="${index}" aria-label="Show ${escapeHTML(project.shortTitle)}" aria-current="${index === 0}"></button>`).join('')}</div>
     <button class="icon-button" type="button" data-glide-next aria-label="Next project" title="Next project">${icon('arrow-right')}</button>
     <button class="icon-button" type="button" data-glide-pause aria-label="Pause automatic rotation" title="Pause automatic rotation" aria-pressed="false">${icon('pause')}</button>
-    <span class="glide-count" aria-hidden="true">01 / 04</span>
+    <span class="glide-count" aria-hidden="true">01 / ${String(items.length).padStart(2, '0')}</span>
   </div><p class="sr-only" data-glide-status role="status"></p>`;
   const stage = element.querySelector('.glide-stage');
   const belt = element.querySelector('.glide-belt');
@@ -297,10 +408,10 @@ function setupFocusGlide(element, items) {
   let focusScale = 1.1;
   let inView = false, userPaused = false, phonePaused = false, keyboardFocus = false, explicitPlay = false;
   let busy = false, pointerStart = null, suppressClick = false;
-  let manual = null, frameId = 0, previousTime = null, settleTimer, suppressTimer;
-  let galleryReady = false, cleanupGallery = () => {};
+  let manual = null, frameId = 0, previousTime = null, suppressTimer;
+  let cleanupGallery = () => {}, coverTransition = null, openingPromise = null;
   let collapsePromise = null;
-  const transitionDuration = () => reducedMotion.matches ? 0 : 850;
+  const transitionDuration = () => reducedMotion.matches ? 0 : 1050;
 
   function pose(index) {
     const distance = mod(position - index + cards.length / 2, cards.length) - cards.length / 2;
@@ -350,7 +461,7 @@ function setupFocusGlide(element, items) {
     if (active !== next) {
       active = next;
       dots.forEach((dot, index) => dot.setAttribute('aria-current', String(index === active)));
-      element.querySelector('.glide-count').textContent = `${String(active + 1).padStart(2, '0')} / 04`;
+      element.querySelector('.glide-count').textContent = `${String(active + 1).padStart(2, '0')} / ${String(items.length).padStart(2, '0')}`;
     }
   }
   function sizeCards() {
@@ -358,18 +469,12 @@ function setupFocusGlide(element, items) {
   }
   function drawExpanded() {
     if (selected === null) return;
-    const slot = (heroSlot.querySelector('.image-gallery-track') || heroSlot).getBoundingClientRect();
-    const bounds = stage.getBoundingClientRect();
     cards.forEach((card, index) => {
       if (index === selected) {
-        card.style.setProperty('--glide-mute', 0);
-        card.style.width = slot.width + 'px'; card.style.height = slot.height + 'px';
-        place(card, { x: slot.left - bounds.left, y: slot.top - bounds.top, scale: 1, opacity: galleryReady ? 0 : 1 });
-        card.style.zIndex = '5';
+        place(card, { ...pose(index), opacity: 0 });
       } else {
         const point = pose(index);
-        point.x += point.x < width / 2 ? -100 : 100;
-        point.scale *= .88; point.opacity = 0;
+        point.opacity = 0;
         place(card, point);
       }
     });
@@ -454,13 +559,17 @@ function setupFocusGlide(element, items) {
   }
   function expand(index) {
     if (selected !== null || busy) return;
+    openingPromise = openDetails(index).finally(() => { openingPromise = null; });
+  }
+  async function openDetails(index) {
     selected = index; manual = null; busy = true;
     refresh();
+    const sourceCover = cards[index].querySelector('.cover');
+    await sourceCover.querySelector('img').decode().catch(() => {});
     const project = repeatedItems[index];
-    galleryReady = false;
     element.dataset.galleryReady = 'false';
     heroSlot.removeAttribute('aria-hidden');
-    heroSlot.innerHTML = renderImageGallery(project);
+    heroSlot.innerHTML = renderImageGallery(project, true);
     heroSlot.firstElementChild.inert = true;
     element.querySelector('[data-glide-category]').textContent = project.category;
     element.querySelector('#glide-title').textContent = project.title;
@@ -472,6 +581,7 @@ function setupFocusGlide(element, items) {
     full.href = projectURL(project.id); full.dataset.openProject = project.id;
     refreshIcons();
     details.hidden = false;
+    coverTransition = createCoverTransition(sourceCover, heroSlot.firstElementChild, stage);
     cleanupGallery = setupImageGallery(heroSlot.firstElementChild);
     controls.inert = true;
     cards.forEach((card, i) => {
@@ -482,53 +592,57 @@ function setupFocusGlide(element, items) {
     stage.classList.add('is-morphing');
     void stage.offsetWidth;
     element.dataset.expanded = 'true';
+    const photoMotion = coverTransition.open(transitionDuration());
     drawExpanded();
     if (cards[index].matches(':focus-visible')) close.focus({ preventScroll: true });
     status.textContent = `${project.title} expanded`;
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      busy = false; galleryReady = true;
-      element.dataset.galleryReady = 'true';
-      heroSlot.firstElementChild.inert = false;
-      cards[index].inert = true;
-      drawExpanded();
-      stage.classList.remove('is-morphing');
-    }, transitionDuration() + 120);
+    await photoMotion;
+    // Arrange the hidden belt now, not while the photo is returning to it.
+    stage.classList.remove('is-morphing');
+    position = selected + Math.round((position - selected) / cards.length) * cards.length;
+    manual = null;
+    draw();
+    busy = false;
+    element.dataset.galleryReady = 'true';
+    heroSlot.firstElementChild.inert = false;
+    cards[index].inert = true;
+    drawExpanded();
   }
   function collapse(forNavigation = false) {
-    if (selected === null) return collapsePromise || Promise.resolve();
-    let completeCollapse;
-    collapsePromise = new Promise(resolve => { completeCollapse = resolve; });
+    if (collapsePromise) return collapsePromise;
+    if (selected === null) return Promise.resolve();
+    collapsePromise = closeDetails(forNavigation).finally(() => { collapsePromise = null; });
+    return collapsePromise;
+  }
+  async function closeDetails(forNavigation) {
+    await openingPromise;
     const opener = cards[selected], keyboard = !forNavigation && details.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
     const bounds = stage.getBoundingClientRect();
     busy = true;
-    cleanupGallery(); cleanupGallery = () => {};
-    galleryReady = false;
-    element.dataset.galleryReady = 'false';
     heroSlot.firstElementChild.inert = true;
-    clearTimeout(settleTimer);
-    stage.classList.add('is-morphing');
+    await cleanupGallery.returnToCover?.();
+    cleanupGallery(); cleanupGallery = () => {};
+    element.dataset.galleryReady = 'false';
+    stage.classList.add('is-morphing', 'is-returning');
     selected = null;
     element.dataset.expanded = 'false';
     details.inert = true;
     cards.forEach(card => { card.classList.remove('is-selected'); card.setAttribute('aria-expanded', 'false'); });
     sizeCards(); draw(); stage.style.height = collapsedHeight + 'px';
+    const photoMotion = coverTransition.close(transitionDuration());
     if (!forNavigation && bounds.top + collapsedHeight < 120) {
       window.scrollTo({ top: window.scrollY + bounds.top - document.querySelector('.topbar').offsetHeight - 24, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
     }
-    settleTimer = setTimeout(() => {
-      details.hidden = true; details.inert = false; controls.inert = false;
-      heroSlot.innerHTML = ''; heroSlot.setAttribute('aria-hidden', 'true');
-      cards.forEach(card => { card.inert = false; });
-      busy = false; stage.classList.remove('is-morphing');
-      measure();
-      if (keyboard) opener.focus({ preventScroll: true });
-      status.textContent = 'Selected projects';
-      refresh();
-      completeCollapse();
-      collapsePromise = null;
-    }, transitionDuration());
-    return collapsePromise;
+    await photoMotion;
+    details.hidden = true; details.inert = false; controls.inert = false;
+    heroSlot.innerHTML = ''; heroSlot.setAttribute('aria-hidden', 'true');
+    coverTransition = null;
+    cards.forEach(card => { card.inert = false; });
+    busy = false; stage.classList.remove('is-morphing', 'is-returning');
+    measure();
+    if (keyboard) opener.focus({ preventScroll: true });
+    status.textContent = 'Selected projects';
+    refresh();
   }
   element.addEventListener('click', event => {
     const card = event.target.closest('[data-glide-project]');
@@ -637,7 +751,7 @@ function setupFocusGlide(element, items) {
   window.addEventListener('resize', measure, { passive: true });
   document.fonts?.ready.then(measure);
   document.addEventListener('visibilitychange', () => { if (document.hidden) finishDrag(null, true); refresh(); });
-  const preferenceChanged = () => { pause.disabled = reducedMotion.matches; paintPause(); refresh(); };
+  const preferenceChanged = () => { if (reducedMotion.matches) coverTransition?.finish(); pause.disabled = reducedMotion.matches; paintPause(); refresh(); };
   reducedMotion.addEventListener('change', preferenceChanged);
   phoneLayout.addEventListener('change', () => { explicitPlay = false; finishDrag(null, true); measure(); preferenceChanged(); });
   measure(); preferenceChanged();
@@ -650,8 +764,8 @@ function renderInternship(item) {
     <div class="internship-copy-window"><div class="internship-copy"><header class="internship-heading"><p class="eyebrow">${escapeHTML(item.date)}</p><h3 id="internship-title">${escapeHTML(item.organisation)}</h3>
       <p class="internship-role">${escapeHTML(item.role)}</p></header><div class="internship-summary"><p>${escapeHTML(project?.summary || item.text)}</p>
       ${project ? `<dl><div><dt>My focus</dt><dd>${escapeHTML(project.role)}</dd></div><div><dt>Outcome</dt><dd>${escapeHTML(project.outcome)}</dd></div></dl>` : '<p class="internship-pending-note">Project details and images forthcoming.</p>'}
-    </div></div></div>${project ? `<figure class="internship-hero">${renderImageGallery(project)}</figure>` : ''}
-    </div>${project ? `<div class="case-story">${[['The problem', project.problem], ['My contribution', project.contribution], ['The result', project.result]].map(([title, text]) => `<div class="internship-fold"><section class="internship-fold-content"><h4>${title}</h4><p>${escapeHTML(text)}</p></section></div>`).join('')}</div>
+    </div>${project?.highlights?.length ? `<div class="internship-highlights" aria-label="Work highlights">${project.highlights.map(item => imageFigure(item)).join('')}</div>` : ''}</div></div>${project ? `<figure class="internship-hero">${renderImageGallery(project, true)}</figure>` : ''}
+    </div>${project ? `<div class="case-story">${[['The problem', project.problem], [project.contributionTitle, project.contribution], ['The result', project.result]].map(([title, text]) => `<div class="internship-fold"><section class="internship-fold-content"><h4>${escapeHTML(title)}</h4><p>${escapeHTML(text)}</p></section></div>`).join('')}</div>
     ${renderMedia(project, true)}${documents(project)}` : ''}`;
 }
 
@@ -665,7 +779,7 @@ function setupInternships() {
   const closeButton = section.querySelector('[aria-label="Collapse internship"]');
   let active = null, opener = null, revision = 0, heightAnimation = null;
   let animations = [], layers = [], overviewLayers = [], cleanupMedia = () => {};
-  let sourceCard = null;
+  let sourceCard = null, coverTransition = null, openingPromise = null;
   let closePromise = null;
   const previews = [...section.querySelectorAll('.internship-preview')];
   const previewToggle = section.querySelector('[data-preview-pause]');
@@ -701,15 +815,6 @@ function setupInternships() {
     animations.push(animation);
     return animation;
   }
-  function heroOrigin(hero, cover) {
-    const target = hero.getBoundingClientRect();
-    const origin = cover?.getBoundingClientRect();
-    const track = cover?.closest('.rotary-track, .experience-list')?.getBoundingClientRect();
-    if (!origin || !track || !origin.width || origin.right <= track.left || origin.left >= track.right) {
-      return { transform: 'translateY(-32px) scale(.92)', clipPath: 'inset(0% 0% 100% 0%)' };
-    }
-    return { transform: `translate(${origin.left - target.left}px,${origin.top - target.top}px) scale(${origin.width / target.width},${origin.height / target.height})`, clipPath: visible.clipPath };
-  }
   function prepareLayers() {
     const hero = content.querySelector('.internship-hero');
     const copy = content.querySelector('.internship-copy-window');
@@ -719,7 +824,9 @@ function setupInternships() {
     layers = textParts.map(element => ({ element, closed: phoneLayout.matches
       ? { ...visible, transform: 'translateY(12px)', opacity: 0 }
       : { ...visible, transform: stacked ? 'translateY(calc(-100% - 28px))' : 'translateX(calc(-100% - 32px))' }, duration: 900, delay: 180 }));
-    if (hero) layers.push({ element: hero, closed: heroOrigin(hero, sourceCard?.querySelector('.cover')), duration: 1000, delay: 0 });
+    hero?.querySelectorAll('.image-gallery-dots, .image-gallery-caption').forEach(element => {
+      layers.push({ element, closed: { ...visible, opacity: 0 }, duration: 300, delay: 750 });
+    });
     content.querySelectorAll('.internship-fold-content').forEach((element, index) => {
       layers.push({ element, closed: element.closest('.internship-media-fold')
         ? { transform: 'translateY(-52px)', clipPath: 'inset(0% 0% 100% 0%)' }
@@ -729,12 +836,12 @@ function setupInternships() {
       layers.push({ element, closed: { transform: 'translateY(-16px)', clipPath: 'inset(0% 0% 100% 0%)' }, duration: 500, delay: 240 });
     });
     overviewLayers = [];
-    overview.querySelectorAll('.experience-entry').forEach(element => {
-      overviewLayers.push({ element: element.querySelector('.experience-entry-content'), closed: tuckedUp, duration: 300, delay: 0 });
-      overviewLayers.push({ element, closed: { transform: 'none', clipPath: 'inset(0% 100% 0% 0%)' }, duration: 180, delay: 150 });
+    overview.querySelectorAll('.experience-entry').forEach((element, index) => {
+      overviewLayers.push({ element, closed: { ...visible, transform: 'translateY(12px)', opacity: 0 },
+        duration: 300, delay: index * 35, returnDuration: 600, returnDelay: 260 + index * 70 });
     });
     overview.querySelectorAll('.rotary-track, .carousel-controls').forEach(element => {
-      overviewLayers.push({ element, closed: { transform: 'translateY(-24px)', clipPath: 'inset(0% 0% 100% 0%)' }, duration: 330, delay: 0 });
+      overviewLayers.push({ element, closed: { ...visible, opacity: 0 }, duration: 330, delay: 0, returnDuration: 550, returnDelay: 450 });
     });
   }
 
@@ -753,11 +860,14 @@ function setupInternships() {
     carousels.forEach(carousel => carousel.refresh());
   }
   function alignExperience() {
-    const top = scrollY + section.querySelector('.section-label').getBoundingClientRect().top - document.querySelector('.topbar').offsetHeight - 24;
+    const top = scrollY + section.querySelector('.section-label').getBoundingClientRect().top - document.querySelector('.topbar').offsetHeight - (compactLayout.matches ? 24 : 16);
     window.scrollTo({ top, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
   }
-  async function open(index, source) {
+  function open(index, source) {
     if (!portfolio.experience[index] || active !== null || closePromise) return;
+    openingPromise = openDetails(index, source).finally(() => { openingPromise = null; });
+  }
+  async function openDetails(index, source) {
     const token = ++revision;
     const keyboard = source.matches(':focus-visible');
     cleanupMedia();
@@ -789,28 +899,35 @@ function setupInternships() {
     panel.hidden = false;
     panel.inert = false;
     refreshIcons();
+    const viewer = content.querySelector('[data-image-gallery]');
+    const sourceCover = sourceCard?.querySelector('.cover');
+    coverTransition = viewer && sourceCover ? createCoverTransition(sourceCover, viewer, stage) : null;
+    cleanupMedia = setupCaseMedia(content);
     const nextHeight = details.offsetHeight;
     stage.style.height = nextHeight + 'px';
     const duration = reducedMotion.matches ? 0 : 1220;
     heightAnimation = stage.animate([{ height: oldHeight + 'px' }, { height: nextHeight + 'px' }], { duration, easing: 'cubic-bezier(.22,.75,.25,1)' });
     prepareLayers();
-    sourceCard?.classList.add('is-morph-source');
+    const photoMotion = coverTransition?.open(1100);
     // Only the picture and clipped contents move; neither view travels as a page-sized block.
     layers.forEach(({ element, closed, duration, delay }) => slide(element, closed, visible, duration, delay));
     const retract = overviewLayers.map(({ element, closed, duration, delay }) => slide(element, visible, closed, duration, delay));
     Promise.all(retract.map(animation => animation.finished.catch(() => {}))).then(() => {
-      if (token === revision) overview.hidden = true;
+      if (token === revision) {
+        // The carousel is already invisible, but still measurable for tablet scrolling.
+        carousels.find(carousel => carousel.element === section.querySelector('[data-carousel]'))?.focusProject(portfolio.experience[index].project);
+        overview.hidden = true;
+      }
     });
     alignExperience();
     if (keyboard) closeButton.focus({ preventScroll: true });
-    await Promise.all([heightAnimation, ...animations].map(animation => animation.finished.catch(() => {})));
+    await Promise.all([photoMotion, ...[heightAnimation, ...animations].map(animation => animation.finished.catch(() => {}))]);
     if (token !== revision) return;
     overview.hidden = true;
     animations.forEach(animation => animation.cancel());
     animations = [];
     stage.classList.remove('is-morphing');
     stage.style.height = '';
-    cleanupMedia = setupCaseMedia(content);
     paint();
   }
   function close(options = {}) {
@@ -820,6 +937,7 @@ function setupInternships() {
     return closePromise;
   }
   async function restoreOverview({ align = true, restoreFocus = true } = {}) {
+    await openingPromise;
     const token = ++revision;
     const keyboard = restoreFocus && panel.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
     if (panel.hidden) {
@@ -829,6 +947,8 @@ function setupInternships() {
       paint();
       return true;
     }
+    panel.inert = true;
+    await cleanupMedia.returnToCover?.();
     const previousParts = new Map(layers.map(({ element, closed }) => [element, motionState(element, closed)]));
     const previousOverview = new Map(overviewLayers.map(({ element, closed }) => [element, overview.hidden ? closed : motionState(element, closed)]));
     const oldHeight = stopAnimations();
@@ -841,13 +961,12 @@ function setupInternships() {
     paint();
     const nextHeight = overview.offsetHeight;
     if (align) alignExperience();
-    const hero = content.querySelector('.internship-hero');
-    const heroTarget = hero && heroOrigin(hero, sourceCard?.querySelector('.cover'));
-    layers.forEach(({ element, closed }) => slide(element, previousParts.get(element), element === hero ? heroTarget : closed, element === hero ? 780 : 600, element === hero ? 160 : 0));
-    overviewLayers.forEach(({ element }) => slide(element, previousOverview.get(element), visible, 540, 400));
+    const photoMotion = coverTransition?.close(1100);
+    layers.forEach(({ element, closed }) => slide(element, previousParts.get(element), closed, 600));
+    overviewLayers.forEach(({ element, returnDuration, returnDelay }) => slide(element, previousOverview.get(element), visible, returnDuration, returnDelay));
     stage.style.height = nextHeight + 'px';
-    heightAnimation = stage.animate([{ height: oldHeight + 'px' }, { height: nextHeight + 'px' }], { duration: reducedMotion.matches ? 0 : 1000, easing: 'cubic-bezier(.4,0,.2,1)' });
-    await Promise.all([heightAnimation, ...animations].map(animation => animation.finished.catch(() => {})));
+    heightAnimation = stage.animate([{ height: oldHeight + 'px' }, { height: nextHeight + 'px' }], { duration: reducedMotion.matches ? 0 : 1100, easing: 'cubic-bezier(.4,0,.2,1)' });
+    await Promise.all([photoMotion, ...[heightAnimation, ...animations].map(animation => animation.finished.catch(() => {}))]);
     if (token !== revision) return false;
     panel.hidden = true;
     content.innerHTML = '';
@@ -857,8 +976,8 @@ function setupInternships() {
     animations.forEach(animation => animation.cancel());
     animations = [];
     layers = []; overviewLayers = [];
-    sourceCard?.classList.remove('is-morph-source');
     sourceCard = null;
+    coverTransition = null;
     paint();
     if (keyboard) opener?.focus({ preventScroll: true });
     return true;
@@ -889,6 +1008,7 @@ function setupInternships() {
   reducedMotion.addEventListener('change', () => {
     if (!reducedMotion.matches) return;
     heightAnimation?.finish();
+    coverTransition?.finish();
     animations.forEach(animation => animation.finish());
   });
 }
@@ -1061,24 +1181,25 @@ function projectImages(project) {
     liftoff: [{ src: 'assets/previews/liftoff/liftoff-poster1.jpg', caption: 'LiftOff project poster.' }],
     kokoni: [
       { src: 'assets/previews/kokoni/moxin-slide21.jpg', caption: 'From a sketch to an editable Blender model. Slide 21.' },
-      { src: 'assets/previews/kokoni/moxin-slide25.jpg', caption: 'The Blender plug-in. Slide 25.' }
+      { src: 'assets/previews/kokoni/moxin-slide25.jpg', caption: 'The Blender plug-in. Slide 25.' },
+      { src: 'assets/previews/kokoni/moxin-slide26.jpg', caption: 'Image-to-model results in Blender. Slide 26.' }
     ]
   };
-  const images = [{ src: project.cover, preview: `assets/thumbnails/${project.id}-720.webp`, caption: project.gallery.find(item => item.src === project.cover)?.caption || project.title },
+  const images = [{ src: project.cover, preview: `assets/thumbnails/${project.thumbnail || project.id}-720.webp`, caption: project.gallery.find(item => item.src === project.cover)?.caption || project.title },
     ...project.gallery, ...(project.views || []), ...(extra[project.id] || [])];
   return images.filter((item, index) => images.findIndex(other => other.src === item.src) === index);
 }
-function renderImageGallery(project) {
+function renderImageGallery(project, croppedCover = false) {
   const images = projectImages(project);
   const slide = (item, index, clone = false) => `
     <div class="image-gallery-slide" data-gallery-index="${index}" ${clone ? 'data-gallery-clone aria-hidden="true" inert' : `role="group" aria-roledescription="slide" aria-label="${index + 1} of ${images.length}"${index ? ' inert' : ''}`}>
       <button class="media-button" type="button" data-image="${escapeHTML(item.src)}" data-caption="${escapeHTML(item.caption)}" aria-label="Enlarge: ${escapeHTML(item.caption)}">
-        <img src="${escapeHTML(item.preview || item.src)}" alt="${escapeHTML(item.caption)}" loading="${index === 0 ? 'eager' : 'lazy'}" draggable="false" width="720" height="450">
+        ${croppedCover && index === 0 ? cover(project, true) : `<img src="${escapeHTML(item.preview || item.src)}" alt="${escapeHTML(item.caption)}" loading="${index === 0 ? 'eager' : 'lazy'}" draggable="false" width="720" height="450">`}
       </button>
       ${images.length > 1 ? `<button class="image-gallery-edge" type="button" data-gallery-prev aria-label="Previous image" title="Previous image">${icon('chevron-left')}</button><button class="image-gallery-edge" type="button" data-gallery-next aria-label="Next image" title="Next image">${icon('chevron-right')}</button>` : ''}
       <button class="image-gallery-zoom" type="button" data-image="${escapeHTML(item.src)}" data-caption="${escapeHTML(item.caption)}" aria-label="Expand image" title="Expand image">${icon('maximize-2')}</button>
     </div>`;
-  return `<div class="image-gallery" data-image-gallery role="region" aria-roledescription="carousel" aria-label="${escapeHTML(project.title)} images">
+  return `<div class="image-gallery${croppedCover ? ' cover-gallery' : ''}" data-image-gallery role="region" aria-roledescription="carousel" aria-label="${escapeHTML(project.title)} images">
     <div class="image-gallery-track" tabindex="0" aria-label="Project images">${images.length > 1 ? slide(images.at(-1), images.length - 1, true) : ''}${images.map((item, index) => slide(item, index)).join('')}${images.length > 1 ? slide(images[0], 0, true) : ''}</div>
     <div class="image-gallery-dots" ${images.length < 2 ? 'hidden' : ''}>${images.map((item, index) => `<button type="button" data-gallery-dot="${index}" aria-label="Show image ${index + 1} of ${images.length}" aria-current="${index === 0}" title="${escapeHTML(item.caption)}"></button>`).join('')}</div>
     <p class="image-gallery-caption" data-gallery-caption aria-live="polite" aria-atomic="true">${escapeHTML(images[0].caption)}</p>
@@ -1170,7 +1291,25 @@ function setupImageGallery(viewer) {
     if (track.clientWidth && track.clientWidth !== width) { width = track.clientWidth; scrollToSlot(index + offset, true); }
   });
   scrollToSlot(offset, true); resize.observe(track); paint();
-  return () => { controller.abort(); resize.disconnect(); clearTimeout(suppressTimer); clearTimeout(settleTimer); };
+  const cleanup = () => { controller.abort(); resize.disconnect(); clearTimeout(suppressTimer); clearTimeout(settleTimer); };
+  cleanup.returnToCover = async () => {
+    settle();
+    if (Math.abs(track.scrollLeft - offset * width) < 2) return;
+    // Return through the gallery without fading the photo to an empty background.
+    await new Promise(resolve => {
+      let fallback;
+      const done = () => {
+        if (Math.abs(track.scrollLeft - offset * width) >= 2) return;
+        clearTimeout(fallback);
+        track.removeEventListener('scroll', done);
+        paint(); resolve();
+      };
+      track.addEventListener('scroll', done, options);
+      fallback = setTimeout(() => { scrollToSlot(offset, true); done(); }, 900);
+      scrollToSlot(offset); done();
+    });
+  };
+  return cleanup;
 }
 function gallery(project) {
   const compact = project.id === 'cellwave' ? 'compact-gallery' : project.id === 'liftoff' ? 'liftoff-gallery' : '';
@@ -1185,6 +1324,9 @@ function documents(project) {
     <a class="doc-link" href="${doc.href}" target="_blank" rel="noreferrer"><img src="${doc.preview}" alt="" loading="lazy" width="110" height="90"><div><strong>${escapeHTML(doc.title)}</strong><span>${escapeHTML(doc.meta)}</span></div>${icon('arrow-up-right')}</a>`).join('')}</div></section>`;
 }
 function renderMedia(project, imagesInGallery = false) {
+  if (['vantage', 'digital-place-vision'].includes(project.media)) return `
+    ${imagesInGallery ? '' : `<section class="case-section"><h3>${project.id === 'vantage' ? 'Prototype & exhibition' : 'At Digital Place Vision'}</h3>${renderImageGallery(project)}</section>`}
+    ${project.media === 'vantage' ? `<section class="case-section"><h3>Vantage in action</h3>${videoFigure('assets/projects/vantage-web/demo.mp4', 'Product overview and prototype demonstration.', 'assets/projects/vantage-web/hero.webp')}</section>` : ''}`;
   if (project.media === 'verbasense') return `<section class="case-section"><h3>The feedback system in action</h3>${videoFigure('assets/projects/verbasense/demo-compressed.mp4', 'Verbasense prototype demonstration.', 'assets/projects/verbasense/poster.jpg')}</section>${gallery(project)}`;
   if (project.media === 'cellwave') return `
     <section class="case-section alignment-section"><div class="media-section-heading alignment-heading"><h3>Cartridge Alignment Program</h3><div><button class="icon-button" type="button" data-replay-alignment aria-label="Replay all alignment videos" title="Replay all alignment videos">${icon('rotate-ccw')}</button><button class="icon-button" type="button" data-pause-alignment aria-label="Pause all alignment videos" title="Pause all alignment videos">${icon('pause')}</button></div></div>
@@ -1316,7 +1458,9 @@ function setupCaseMedia(root, scrollRoot = null) {
   }
   paintAlignment();
   cleanups.push(() => observer.disconnect(), () => document.removeEventListener('visibilitychange', visibilityChange), () => reducedMotion.removeEventListener('change', motionChange), () => phoneLayout.removeEventListener('change', sizeAlignmentControls));
-  return () => { cleanups.forEach(cleanup => cleanup()); videos.forEach(video => video.pause()); };
+  const cleanup = () => { cleanups.forEach(cleanup => cleanup()); videos.forEach(video => video.pause()); };
+  cleanup.returnToCover = () => cleanups[0]?.returnToCover?.();
+  return cleanup;
 }
 
 function openProject(id, updateHistory = true) {
